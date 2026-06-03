@@ -2,11 +2,13 @@
 (() => {
 var __webpack_modules__ = ({
 "../../normalModuleFactory​#afterResolve/duplicate/a.js"(module) {
+globalThis.__rspack_test_side_effect__ = true;
 module.exports = "a";
 
 
 },
 "../../normalModuleFactory​#afterResolve/duplicate/c.js"(module) {
+globalThis.__rspack_test_side_effect__ = true;
 module.exports = "c";
 
 

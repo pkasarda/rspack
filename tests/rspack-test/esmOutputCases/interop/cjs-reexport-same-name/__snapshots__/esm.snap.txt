@@ -7,6 +7,7 @@ __webpack_require__.add({
   !*** ./a.cjs ***!
   \***************/
 (__unused_rspack_module, exports) {
+globalThis.__rspack_test_side_effect__ = true;
 exports.U = 'from-a';
 exports.G = 100;
 
@@ -17,6 +18,7 @@ exports.G = 100;
   !*** ./b.cjs ***!
   \***************/
 (__unused_rspack_module, exports) {
+globalThis.__rspack_test_side_effect__ = true;
 exports.U = 'from-b';
 exports.N = 200;
 

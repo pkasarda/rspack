@@ -6,12 +6,13 @@ use rspack_core::{
 use rspack_util::SpanExt;
 use rustc_hash::FxHashSet;
 use swc_atoms::Atom;
-use swc_experimental_allocator::{CloneIn, atom::Atom as AstAtom};
+use swc_experimental_allocator::{CloneIn, atom::Atom as AstAtom, wtf8::Wtf8};
 use swc_experimental_ecma_ast::{
-  ArrayLit, ArrowExpr, BlockStmt, BlockStmtOrExpr, CallExpr, Class, ClassMember, CommentKind,
-  Comments, Decl, DefaultDecl, ExportSpecifier, Expr, ExprOrSpread, Function, GetSpan,
-  ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, ObjectPatProp, Pat, Program, PropName,
-  ScopeId, Span, Span as AstSpan, Stmt, VarDecl, VarDeclKind, VarDeclOrExpr, Visit, VisitWith,
+  ArrayLit, ArrowExpr, AssignExpr, AssignOp, BlockStmt, BlockStmtOrExpr, CallExpr, Class,
+  ClassMember, CommentKind, Comments, Decl, DefaultDecl, ExportSpecifier, Expr, ExprOrSpread,
+  Function, GetSpan, ImportSpecifier, Lit, MemberProp, ModuleDecl, ModuleExportName, ModuleItem,
+  ObjectPatProp, Pat, Program, PropName, ScopeId, SimpleAssignTarget, Span, Span as AstSpan, Stmt,
+  VarDecl, VarDeclKind, VarDeclOrExpr, Visit, VisitWith,
 };
 use swc_experimental_ecma_utils::{ExprCtx, ExprExt};
 
@@ -1241,14 +1242,37 @@ impl SideEffectsParserPlugin {
         }
       }
       Statement::Expr(expr_stmt) => {
-        if !is_pure_expression(
-          parser,
-          self.analyze_side_effects_free,
-          &expr_stmt.expr,
-          self.unresolved_scope_id,
-          parser.ast.comments,
-          Some(&mut callees),
-        ) {
+        let is_pure_statement = if let Expr::Assign(assign_expr) = &expr_stmt.expr {
+          if !parser.is_esm && is_common_js_export_assignment(parser, assign_expr) {
+            is_pure_expression(
+              parser,
+              self.analyze_side_effects_free,
+              &assign_expr.right,
+              self.unresolved_scope_id,
+              parser.ast.comments,
+              Some(&mut callees),
+            )
+          } else {
+            is_pure_expression(
+              parser,
+              self.analyze_side_effects_free,
+              &expr_stmt.expr,
+              self.unresolved_scope_id,
+              parser.ast.comments,
+              Some(&mut callees),
+            )
+          }
+        } else {
+          is_pure_expression(
+            parser,
+            self.analyze_side_effects_free,
+            &expr_stmt.expr,
+            self.unresolved_scope_id,
+            parser.ast.comments,
+            Some(&mut callees),
+          )
+        };
+        if !is_pure_statement {
           let range = DependencyRange::from(expr_stmt.span());
           let loc = parser.to_dependency_location(range);
           parser.side_effects_item = Some(SideEffectsBailoutItemWithSpan::new(
@@ -1334,7 +1358,7 @@ impl SideEffectsParserPlugin {
           range,
           loc,
           String::from("Statement"),
-        ))
+        ));
       }
     };
 
@@ -1602,6 +1626,85 @@ pub fn is_pure_function<'a>(
     }
   }
   true
+}
+
+fn is_common_js_export_assignment(parser: &mut JavascriptParser, expr: &AssignExpr) -> bool {
+  if !matches!(expr.op, AssignOp::Assign) {
+    return false;
+  }
+
+  let exports_is_free = parser
+    .get_variable_info(&Atom::from("exports"))
+    .is_none_or(|info| info.is_free() || info.is_tagged());
+  let module_is_free = parser
+    .get_variable_info(&Atom::from("module"))
+    .is_none_or(|info| info.is_free() || info.is_tagged());
+
+  let Some(SimpleAssignTarget::Member(member)) = expr.left.as_simple() else {
+    return false;
+  };
+
+  let property_is_side_effect_free = match &member.prop {
+    MemberProp::Ident(_) => true,
+    MemberProp::Computed(computed) => match &computed.expr {
+      Expr::Lit(lit) => matches!(&**lit, Lit::Str(_)),
+      _ => false,
+    },
+    MemberProp::PrivateName(_) => false,
+  };
+
+  if !property_is_side_effect_free {
+    return false;
+  }
+
+  let property_is_exports = match &member.prop {
+    MemberProp::Ident(ident) => ident.sym == "exports",
+    MemberProp::Computed(computed) => match &computed.expr {
+      Expr::Lit(lit) => match &**lit {
+        Lit::Str(str) => str.value.as_wtf8() == Wtf8::from_str("exports"),
+        _ => false,
+      },
+      _ => false,
+    },
+    MemberProp::PrivateName(_) => false,
+  };
+
+  match &member.obj {
+    Expr::Ident(ident) => {
+      if ident.sym == "exports" {
+        return exports_is_free;
+      }
+      if ident.sym == "module" && module_is_free && property_is_exports {
+        parser.module_exports_reassigned = true;
+        return true;
+      }
+      false
+    }
+    Expr::Member(object_member) => {
+      let object_property_is_exports = match &object_member.prop {
+        MemberProp::Ident(ident) => ident.sym == "exports",
+        MemberProp::Computed(computed) => match &computed.expr {
+          Expr::Lit(lit) => match &**lit {
+            Lit::Str(str) => str.value.as_wtf8() == Wtf8::from_str("exports"),
+            _ => false,
+          },
+          _ => false,
+        },
+        MemberProp::PrivateName(_) => false,
+      };
+
+      match &object_member.obj {
+        Expr::Ident(ident) => {
+          ident.sym == "module"
+            && module_is_free
+            && object_property_is_exports
+            && !parser.module_exports_reassigned
+        }
+        _ => false,
+      }
+    }
+    _ => false,
+  }
 }
 
 #[inline(never)]
