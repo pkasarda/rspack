@@ -121,23 +121,25 @@ impl ESMImportSpecifierDependency {
     self.ids.first().unwrap_or(&self.name)
   }
 
+  pub fn get_destructuring_referenced_exports(&self, ids: &[Atom]) -> Vec<Vec<Atom>> {
+    let mut refs = Vec::new();
+    if let Some(referenced_properties) = &self.referenced_properties_in_destructuring {
+      referenced_properties.traverse_on_leaf(&mut |stack| {
+        let mut ids = ids.to_vec();
+        ids.extend(stack.iter().map(|p| p.id.clone()));
+        refs.push(ids);
+      });
+    }
+    refs
+  }
+
   pub fn get_referenced_exports_in_destructuring(
     &self,
     ids: Option<&[Atom]>,
   ) -> Vec<ExtendedReferencedExport> {
-    if let Some(referenced_properties) = &self.referenced_properties_in_destructuring {
-      let mut refs = Vec::new();
-      referenced_properties.traverse_on_leaf(&mut |stack| {
-        let ids_in_destructuring = stack.iter().map(|p| p.id.clone());
-        if let Some(ids) = ids {
-          let mut ids = ids.to_vec();
-          ids.extend(ids_in_destructuring);
-          refs.push(ids);
-        } else {
-          refs.push(ids_in_destructuring.collect::<Vec<_>>());
-        }
-      });
-      refs
+    let destructuring_refs = self.get_destructuring_referenced_exports(ids.unwrap_or_default());
+    if !destructuring_refs.is_empty() {
+      destructuring_refs
         .into_iter()
         // Do not inline if there are any places where used as destructuring
         .map(|name| {
@@ -171,6 +173,10 @@ impl ESMImportSpecifierDependency {
 
   pub fn set_used_by_exports(&mut self, used_by_exports: Option<UsedByExports>) {
     self.used_by_exports = used_by_exports;
+  }
+
+  pub fn used_by_exports(&self) -> Option<&UsedByExports> {
+    self.used_by_exports.as_ref()
   }
 
   pub fn set_branch_guard(&mut self, guard: DependencyBranchGuard) {
