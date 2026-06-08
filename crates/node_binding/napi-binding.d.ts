@@ -2267,6 +2267,7 @@ export interface RawExperiments {
   useInputFileSystem?: false | Array<RegExp>
   css?: boolean
   deferImport: boolean
+  sourceImport: boolean
   pureFunctions: boolean
 }
 
@@ -2471,6 +2472,7 @@ export interface RawJavascriptParserOptions {
   commonjsMagicComments?: boolean
 commonjs?: boolean | { exports?: boolean | 'skipInEsm' }
 deferImport?: boolean
+sourceImport?: boolean
 /**
  * This option is experimental in Rspack only and subject to change or be removed anytime.
  * @experimental
@@ -2682,6 +2684,7 @@ export interface RawModuleRule {
   issuer?: RawRuleSetCondition
   issuerLayer?: RawRuleSetCondition
   dependency?: RawRuleSetCondition
+  phase?: RawRuleSetCondition
   scheme?: RawRuleSetCondition
   mimetype?: RawRuleSetCondition
   oneOf?: Array<RawModuleRule>
