@@ -10,10 +10,10 @@ use heck::{ToKebabCase, ToLowerCamelCase};
 use once_cell::sync::OnceCell;
 use regex::{Captures, Regex};
 use rspack_core::{
-  BoxDependency, ChunkGraph, Compilation, CompilerOptions, CssAutoOrModuleParserOptions,
-  CssExportType, CssExportsConvention, CssModuleGeneratorOptions, CssModuleRenderCondition,
-  GeneratorOptions, ImportAttributes, LocalIdentName, Module, ModuleType, NormalModuleCreateData,
-  ParserOptions, PathData, ReplaceAllPlaceholder, ResourceData,
+  BoxDependency, ChunkGraph, Compilation, CompilerOptions, CssExportType, CssExportsConvention,
+  CssModuleGeneratorOptions, CssModuleRenderCondition, GeneratorOptions, ImportAttributes,
+  LocalIdentName, Module, ModuleType, NormalModuleCreateData, PathData, ReplaceAllPlaceholder,
+  ResourceData,
 };
 use rspack_error::{Diagnostic, Error, Result, Severity};
 use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackHash};
@@ -38,17 +38,6 @@ pub(crate) fn css_generator_options(
     .expect("should have CssModuleGeneratorOptions")
 }
 
-pub(crate) fn css_parser_options(
-  parser_options: Option<&ParserOptions>,
-) -> CssAutoOrModuleParserOptions {
-  match parser_options.expect("should have CssParserOptions") {
-    ParserOptions::CssAutoOrModule(options) => options.clone(),
-    ParserOptions::CssModule(options) => options.clone().into(),
-    ParserOptions::Css(options) => options.into(),
-    _ => panic!("should have CssParserOptions"),
-  }
-}
-
 pub(crate) fn css_module_export_type(module: &dyn Module) -> Option<CssExportType> {
   module
     .build_info()
@@ -59,22 +48,10 @@ pub(crate) fn css_module_export_type(module: &dyn Module) -> Option<CssExportTyp
       module.as_normal_module().and_then(|module| {
         module
           .parser_and_generator()
-          .downcast_ref::<CssParserAndGenerator>()?;
-        css_parser_options(module.get_parser_options()).export_type
+          .downcast_ref::<CssParserAndGenerator>()
+          .and_then(|parser_and_generator| parser_and_generator.export_type)
       })
     })
-}
-
-pub(crate) fn effective_css_export_type(
-  module: &dyn Module,
-  parser_options: Option<&ParserOptions>,
-) -> Option<CssExportType> {
-  module
-    .build_info()
-    .css
-    .as_deref()
-    .and_then(|css| css.export_type)
-    .or_else(|| css_parser_options(parser_options).export_type)
 }
 
 pub(crate) fn css_render_conditions_from_module(

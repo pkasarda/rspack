@@ -23,9 +23,8 @@ use crate::{
   parser_and_generator::generator::update_css_exports,
   utils::{
     LocalIdentModuleHashOptions, LocalIdentOptions, PresentationalDependencyHashUpdate,
-    css_generator_options, css_parser_options, css_parsing_traceable_error,
-    export_locals_convention, normalize_url, replace_module_request_prefix, source_order_to_i32,
-    unescape,
+    css_generator_options, css_parsing_traceable_error, export_locals_convention, normalize_url,
+    replace_module_request_prefix, source_order_to_i32, unescape,
   },
 };
 
@@ -174,7 +173,11 @@ fn is_custom_property_name(value: &str) -> bool {
 
 impl<'context> CssModuleParser<'context> {
   pub fn new(parse_context: ParseContext<'context>) -> Self {
-    let parser_options = css_parser_options(parse_context.module_parser_options);
+    let parser_options = parse_context
+      .module_parser_options
+      .and_then(|options| options.get_css_module())
+      .expect("CssParserOptions should be normalized to CssAutoOrModule")
+      .clone();
     let generator_options = css_generator_options(parse_context.module_generator_options);
     let source = remove_bom(parse_context.source.clone());
     let source_code: Arc<str> = source.source().into_string_lossy().into();
@@ -757,13 +760,15 @@ impl<'context> CssModuleParser<'context> {
       supports.map(|supports| supports.trim().into()),
       layer,
     );
-    self.dependencies.push(Box::new(CssImportDependency::new(
+    let dep = Box::new(CssImportDependency::new(
       request,
       DependencyRange::new(range.start, range.end),
       inherited_render_conditions,
       render_condition,
       self.export_type(),
-    )));
+    ));
+    self.dependencies.push(dep.clone());
+    self.code_generation_dependencies.push(dep);
     Ok(())
   }
 

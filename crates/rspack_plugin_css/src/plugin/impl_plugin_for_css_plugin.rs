@@ -632,22 +632,19 @@ impl Plugin for CssPlugin {
       .render_manifest
       .tap(render_manifest::new(self));
 
-    ctx.register_parser_and_generator_builder(
+    for module_type in [
       ModuleType::Css,
-      Box::new(|_| Box::new(CssParserAndGenerator::new()) as Box<dyn ParserAndGenerator>),
-    );
-    ctx.register_parser_and_generator_builder(
       ModuleType::CssGlobal,
-      Box::new(|_| Box::new(CssParserAndGenerator::new()) as Box<dyn ParserAndGenerator>),
-    );
-    ctx.register_parser_and_generator_builder(
       ModuleType::CssModule,
-      Box::new(|_| Box::new(CssParserAndGenerator::new()) as Box<dyn ParserAndGenerator>),
-    );
-    ctx.register_parser_and_generator_builder(
       ModuleType::CssAuto,
-      Box::new(|_| Box::new(CssParserAndGenerator::new()) as Box<dyn ParserAndGenerator>),
-    );
+    ] {
+      ctx.register_parser_and_generator_builder(
+        module_type,
+        Box::new(|options| {
+          Box::new(CssParserAndGenerator::new(options)) as Box<dyn ParserAndGenerator>
+        }),
+      );
+    }
 
     Ok(())
   }

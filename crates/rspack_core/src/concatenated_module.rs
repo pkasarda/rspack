@@ -655,7 +655,7 @@ impl ConcatenatedModule {
 
   // TODO: caching https://github.com/webpack/webpack/blob/1f99ad6367f2b8a6ef17cce0e058f7a67fb7db18/lib/optimize/ConcatenatedModule.js#L663-L664
   pub fn create(
-    root_module_ctxt: RootModuleContext,
+    mut root_module_ctxt: RootModuleContext,
     mut modules: Vec<ConcatenatedInnerModule>,
     hash_function: Option<HashFunction>,
     runtime: Option<RuntimeSpec>,
@@ -663,6 +663,19 @@ impl ConcatenatedModule {
   ) -> Self {
     modules.sort_unstable_by_key(|a| a.id);
     let id = Self::create_identifier(&root_module_ctxt, &modules, hash_function);
+    let module_graph = compilation.get_module_graph();
+    for module in &modules {
+      let Some(dependencies) = module_graph
+        .module_by_identifier(&module.id)
+        .and_then(|module| module.get_code_generation_dependencies())
+      else {
+        continue;
+      };
+      root_module_ctxt
+        .code_generation_dependencies
+        .get_or_insert_with(Vec::new)
+        .extend(dependencies.iter().cloned());
+    }
     Self::new(id.as_str().into(), root_module_ctxt, modules, runtime)
   }
 

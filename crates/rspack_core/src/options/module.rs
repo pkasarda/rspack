@@ -77,9 +77,6 @@ macro_rules! get_variant {
 
 impl ParserOptions {
   get_variant!(get_asset, Asset, AssetParserOptions);
-  get_variant!(get_css, Css, CssParserOptions);
-  get_variant!(get_css_auto, CssAutoOrModule, CssAutoOrModuleParserOptions);
-  get_variant!(get_css_global, CssModule, CssModuleParserOptions);
   get_variant!(
     get_css_module,
     CssAutoOrModule,
