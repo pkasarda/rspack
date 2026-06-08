@@ -6,9 +6,10 @@ use rspack_core::{
   ConstDependency, CssAutoOrModuleParserOptions, CssExport, CssExportType, CssExports,
   CssExportsConvention, CssLayer, CssLocalNames, CssModuleGeneratorOptions,
   CssModuleRenderCondition, CssParserImport, CssParserImportContext, Dependency, DependencyId,
-  DependencyRange, ModuleType, ParseContext, ParseResult, ResourceData, StaticExportsDependency,
-  StaticExportsSpec, diagnostics::map_box_diagnostics_to_module_parse_diagnostics, remove_bom,
-  rspack_sources::Source, topological_sort,
+  DependencyRange, ModuleType, ParseContext, ParseResult, ParserOptions, ResourceData,
+  StaticExportsDependency, StaticExportsSpec,
+  diagnostics::map_box_diagnostics_to_module_parse_diagnostics, remove_bom, rspack_sources::Source,
+  topological_sort,
 };
 use rspack_error::{Diagnostic, IntoTWithDiagnosticArray, Result, Severity, TWithDiagnosticArray};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -29,7 +30,7 @@ use crate::{
 };
 
 pub(super) struct CssModuleParser<'context> {
-  parser_options: CssAutoOrModuleParserOptions,
+  parser_options: &'context CssAutoOrModuleParserOptions,
   generator_options: &'context CssModuleGeneratorOptions,
   exports_only: bool,
   export_type: Option<CssExportType>,
@@ -164,10 +165,6 @@ impl ComposesOrderState {
   }
 }
 
-fn source_order_to_i32(source_order: u32) -> i32 {
-  source_order.try_into().unwrap_or(i32::MAX)
-}
-
 fn is_custom_property_name(value: &str) -> bool {
   !value.is_empty()
     && value
@@ -179,9 +176,8 @@ impl<'context> CssModuleParser<'context> {
   pub fn new(parse_context: ParseContext<'context>) -> Self {
     let parser_options = parse_context
       .module_parser_options
-      .and_then(|options| options.get_css_module())
-      .expect("CssParserOptions should be normalized to CssAutoOrModule")
-      .clone();
+      .and_then(ParserOptions::get_css_module)
+      .expect("CssParserOptions should be normalized to CssAutoOrModule");
     let generator_options = css_generator_options(parse_context.module_generator_options);
     let source = remove_bom(parse_context.source.clone());
     let source_code: Arc<str> = source.source().into_string_lossy().into();
