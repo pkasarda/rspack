@@ -331,9 +331,9 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     self
       .module
       .get_dependencies()
-      .into_iter()
+      .iter()
       .filter_map(move |dependency_id| {
-        let dependency = module_graph.dependency_by_id(&dependency_id);
+        let dependency = module_graph.dependency_by_id(dependency_id);
         if !matches!(dependency.dependency_type(), DependencyType::CssImport) {
           return None;
         }
@@ -342,7 +342,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
             "dependency with type DependencyType::CssImport should only be CssImportDependency"
           );
         };
-        let imported_module = module_graph.module_graph_module_by_dependency_id(&dependency_id)?;
+        let imported_module = module_graph.module_graph_module_by_dependency_id(dependency_id)?;
 
         Some(CssImportedModule {
           module_identifier: imported_module.module_identifier,

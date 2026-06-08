@@ -789,7 +789,7 @@ impl<'context> CssModuleParser<'context> {
     if render_condition.is_empty() {
       return inherited_render_conditions;
     }
-    inherited_render_conditions.push(render_condition.clone());
+    inherited_render_conditions.push(render_condition);
     inherited_render_conditions
   }
 
