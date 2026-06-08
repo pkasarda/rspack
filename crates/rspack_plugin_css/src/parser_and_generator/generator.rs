@@ -214,10 +214,10 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
 
   fn child_generator<'b>(
     &'b mut self,
-    source: &'b BoxSource,
+    source: BoxSource,
     module: &'b dyn Module,
   ) -> CssModuleGenerator<'b, 'g> {
-    CssModuleGenerator::new(source.clone(), module, self.generate_context, self.with_hmr)
+    CssModuleGenerator::new(source, module, self.generate_context, self.with_hmr)
   }
 
   pub(crate) fn render_css_module_source(&mut self) -> BoxSource {
@@ -319,35 +319,36 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
         continue;
       };
 
-      let mut child = self.child_generator(imported_source, imported_module.as_ref());
+      let mut child = self.child_generator(imported_source.clone(), imported_module.as_ref());
       child.render_ordered_css_sources(builder, &css_import.render_conditions, seen);
     }
   }
 
-  fn css_import_modules(&self) -> Vec<CssImportedModule> {
+  fn css_import_modules(&self) -> impl Iterator<Item = CssImportedModule> + 'a {
     let compilation = self.generate_context.compilation;
     let module_graph = compilation.get_module_graph();
-    let mut imported_modules = Vec::new();
 
-    for dependency_id in self.module.get_dependencies() {
-      let dependency = module_graph.dependency_by_id(dependency_id);
-      if !matches!(dependency.dependency_type(), DependencyType::CssImport) {
-        continue;
-      }
-      let Some(css_import_dep) = dependency.downcast_ref::<CssImportDependency>() else {
-        panic!("dependency with type DependencyType::CssImport should only be CssImportDependency");
-      };
-      let Some(imported_module) = module_graph.module_graph_module_by_dependency_id(dependency_id)
-      else {
-        continue;
-      };
-      imported_modules.push(CssImportedModule {
-        module_identifier: imported_module.module_identifier,
-        render_conditions: css_import_dep.render_conditions().cloned().collect(),
-      });
-    }
+    self
+      .module
+      .get_dependencies()
+      .into_iter()
+      .filter_map(move |dependency_id| {
+        let dependency = module_graph.dependency_by_id(&dependency_id);
+        if !matches!(dependency.dependency_type(), DependencyType::CssImport) {
+          return None;
+        }
+        let Some(css_import_dep) = dependency.downcast_ref::<CssImportDependency>() else {
+          panic!(
+            "dependency with type DependencyType::CssImport should only be CssImportDependency"
+          );
+        };
+        let imported_module = module_graph.module_graph_module_by_dependency_id(&dependency_id)?;
 
-    imported_modules
+        Some(CssImportedModule {
+          module_identifier: imported_module.module_identifier,
+          render_conditions: css_import_dep.render_conditions().cloned().collect(),
+        })
+      })
   }
 
   fn css_text_expr(
@@ -460,6 +461,8 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     let (require, require_left, require_right) = self.render_require_call_parts();
     let mut code = String::new();
 
+    let has_render_condition = self.css_build_info.render_conditions().next().is_none();
+
     for css_import in self.css_import_modules() {
       let Some(module_id) = ChunkGraph::get_module_id(
         &compilation.module_ids_artifact,
@@ -476,7 +479,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       if matches!(
         css_module_export_type(imported_module.as_ref()),
         Some(CssExportType::Style)
-      ) && self.css_build_info.render_conditions().next().is_none()
+      ) && has_render_condition
         && css_import.render_conditions.is_empty()
       {
         code.push_str(&concat_string!(
@@ -503,7 +506,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
         continue;
       }
 
-      let mut child = self.child_generator(source, imported_module.as_ref());
+      let mut child = self.child_generator(source.clone(), imported_module.as_ref());
       code.push_str(&child.render_style_imports(visited_inlined_modules));
       let css_source = child.render_css_module_source();
       let css = child.css_text_expr(css_source, &css_import.render_conditions);

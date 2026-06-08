@@ -38,6 +38,10 @@ pub(crate) fn css_generator_options(
     .expect("should have CssModuleGeneratorOptions")
 }
 
+pub(crate) fn source_order_to_i32(source_order: u32) -> i32 {
+  source_order.try_into().unwrap_or(i32::MAX)
+}
+
 pub(crate) fn css_module_export_type(module: &dyn Module) -> Option<CssExportType> {
   module
     .build_info()
