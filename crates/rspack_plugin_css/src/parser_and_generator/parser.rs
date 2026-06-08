@@ -24,7 +24,8 @@ use crate::{
   utils::{
     LocalIdentModuleHashOptions, LocalIdentOptions, PresentationalDependencyHashUpdate,
     css_generator_options, css_parser_options, css_parsing_traceable_error,
-    export_locals_convention, normalize_url, replace_module_request_prefix, unescape,
+    export_locals_convention, normalize_url, replace_module_request_prefix, source_order_to_i32,
+    unescape,
   },
 };
 
@@ -1217,9 +1218,12 @@ impl<'context> CssModuleParser<'context> {
         self.export_type(),
       );
       dep_id = Some(*dep.id());
-      self
-        .composes_order
-        .track_request_order(&local_classes, from, range.start as i32, *dep.id());
+      self.composes_order.track_request_order(
+        &local_classes,
+        from,
+        source_order_to_i32(range.start),
+        *dep.id(),
+      );
       self.dependencies.push(Box::new(dep));
     } else if from.is_none() {
       self

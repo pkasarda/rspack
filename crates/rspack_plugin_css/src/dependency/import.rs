@@ -7,6 +7,8 @@ use rspack_core::{
   iter_css_module_render_conditions, push_css_module_identifier_part,
 };
 
+use crate::utils::source_order_to_i32;
+
 #[cacheable]
 #[derive(Debug, Clone)]
 pub struct CssImportDependency {
@@ -127,10 +129,6 @@ impl DependencyCodeGeneration for CssImportDependency {
 }
 
 impl AsContextDependency for CssImportDependency {}
-
-fn source_order_to_i32(source_order: u32) -> i32 {
-  source_order.try_into().unwrap_or(i32::MAX)
-}
 
 fn create_resource_identifier(
   request: &str,

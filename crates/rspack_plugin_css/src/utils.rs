@@ -137,6 +137,34 @@ pub(crate) fn css_dependency_export_type(dependency: &BoxDependency) -> Option<C
     })
 }
 
+pub(crate) struct CssDependencyMeta {
+  pub is_css_import_dependency: bool,
+  pub is_css_dependency: bool,
+  pub render_conditions: Vec<CssModuleRenderCondition>,
+  pub export_type: Option<CssExportType>,
+}
+
+pub(crate) fn css_dependency_meta(dependency: &BoxDependency) -> CssDependencyMeta {
+  let css_import_dependency = dependency.downcast_ref::<CssImportDependency>();
+  let is_css_import_dependency = css_import_dependency.is_some();
+  let is_css_dependency =
+    is_css_import_dependency || dependency.downcast_ref::<CssComposeDependency>().is_some();
+
+  CssDependencyMeta {
+    is_css_import_dependency,
+    is_css_dependency,
+    render_conditions: css_import_dependency
+      .map(|dep| dep.render_conditions().cloned().collect())
+      .unwrap_or_default(),
+    export_type: css_dependency_export_type(dependency)
+      .or_else(|| css_attribute_export_type(dependency.get_attributes())),
+  }
+}
+
+pub(crate) fn source_order_to_i32(source_order: u32) -> i32 {
+  source_order.try_into().unwrap_or(i32::MAX)
+}
+
 #[derive(Debug, Clone)]
 pub struct PresentationalDependencyHashUpdate<'a> {
   pub start: u32,

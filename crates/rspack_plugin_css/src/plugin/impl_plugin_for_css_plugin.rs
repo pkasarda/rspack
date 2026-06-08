@@ -28,9 +28,9 @@ use smol_str::SmolStr;
 use crate::{
   CssPlugin,
   dependency::{
-    CssComposeDependency, CssIcssSymbolDependencyTemplate, CssImportDependency,
-    CssImportDependencyTemplate, CssLocalIdentDependencyTemplate,
-    CssSelfReferenceLocalIdentDependencyTemplate, CssUrlDependencyTemplate,
+    CssIcssSymbolDependencyTemplate, CssImportDependency, CssImportDependencyTemplate,
+    CssLocalIdentDependencyTemplate, CssSelfReferenceLocalIdentDependencyTemplate,
+    CssUrlDependencyTemplate,
   },
   parser_and_generator::{
     CodeGenerationDataUnusedLocalIdent, CssParserAndGenerator, CssSourceBuilder,
@@ -39,8 +39,8 @@ use crate::{
   runtime::{CssExportRuntimeModule, CssExportRuntimeModuleKind, CssLoadingRuntimeModule},
   utils::{
     AUTO_PUBLIC_PATH_PLACEHOLDER, append_css_export_type_key, css_attribute_export_type,
-    css_dependency_export_type, css_module_has_charset, css_module_is_import_dependency,
-    css_module_resource, css_render_conditions_from_module,
+    css_dependency_export_type, css_dependency_meta, css_module_has_charset,
+    css_module_is_import_dependency, css_module_resource, css_render_conditions_from_module,
   },
 };
 
@@ -305,15 +305,10 @@ async fn normal_module_factory_after_resolve(
     }
   }
 
-  let css_dependency_export_type = css_import_dep
-    .and_then(|dep| dep.export_type())
-    .or_else(|| {
-      data
-        .dependencies
-        .first()
-        .and_then(|dependency| dependency.downcast_ref::<CssComposeDependency>())
-        .and_then(|dep| dep.export_type())
-    });
+  let css_dependency_export_type = data
+    .dependencies
+    .first()
+    .and_then(css_dependency_export_type);
 
   if let Some(export_type) = css_dependency_export_type.or(css_attribute_export_type) {
     append_css_export_type_key(create_data, export_type);
@@ -333,19 +328,11 @@ async fn normal_module_factory_module(
     return Ok(());
   };
 
-  let is_css_import_dependency = dependency.downcast_ref::<CssImportDependency>().is_some();
-  let is_css_dependency =
-    is_css_import_dependency || dependency.downcast_ref::<CssComposeDependency>().is_some();
-  let render_conditions = dependency
-    .downcast_ref::<CssImportDependency>()
-    .map(|dep| dep.render_conditions())
-    .into_iter()
-    .flatten()
-    .cloned()
-    .collect::<Vec<_>>();
-  let css_attribute_export_type = css_attribute_export_type(dependency.get_attributes());
-  let export_type = css_dependency_export_type(dependency).or(css_attribute_export_type);
-  if render_conditions.is_empty() && export_type.is_none() && !is_css_dependency {
+  let css_dependency_meta = css_dependency_meta(dependency);
+  if css_dependency_meta.render_conditions.is_empty()
+    && css_dependency_meta.export_type.is_none()
+    && !css_dependency_meta.is_css_dependency
+  {
     return Ok(());
   }
 
@@ -353,10 +340,10 @@ async fn normal_module_factory_module(
     .build_info_mut()
     .css
     .get_or_insert_with(|| Box::new(CssBuildInfo::default()));
-  css_build_info.inherited_render_conditions = render_conditions;
+  css_build_info.inherited_render_conditions = css_dependency_meta.render_conditions;
   css_build_info.render_condition = CssModuleRenderCondition::default();
-  css_build_info.export_type = export_type;
-  css_build_info.css_import_dependency = is_css_import_dependency;
+  css_build_info.export_type = css_dependency_meta.export_type;
+  css_build_info.css_import_dependency = css_dependency_meta.is_css_import_dependency;
 
   Ok(())
 }

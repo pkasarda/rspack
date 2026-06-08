@@ -8,10 +8,10 @@ use regex::Regex;
 use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_core::{
   ChunkGraph, Compilation, CssBuildInfo, CssExportType, CssModuleGeneratorOptions, DependencyType,
-  ExportsInfoArtifact, GenerateContext, Module, ModuleGraph, ModuleIdentifier, ModuleInitFragments,
-  NormalModule, ParseContext, ParseResult, ParserAndGenerator, RuntimeGlobals, RuntimeSpec,
-  SourceType, TemplateContext, UsageState,
-  rspack_sources::{BoxSource, ReplaceSource, Source, SourceExt},
+  ExportsInfoArtifact, GenerateContext, Module, ModuleGraph, ModuleIdentifier, NormalModule,
+  ParseContext, ParseResult, ParserAndGenerator, RuntimeGlobals, RuntimeSpec, SourceType,
+  UsageState,
+  rspack_sources::{BoxSource, Source},
 };
 pub use rspack_core::{CssExport, CssExports};
 use rspack_error::{Result, TWithDiagnosticArray};
@@ -26,7 +26,10 @@ use smol_str::SmolStr;
 pub(crate) use source_builder::CssSourceBuilder;
 
 use crate::{
-  parser_and_generator::{generator::CssModuleGenerator, parser::CssModuleParser},
+  parser_and_generator::{
+    generator::{CssModuleGenerator, render_css_source_with_dependencies},
+    parser::CssModuleParser,
+  },
   utils::{css_generator_options, effective_css_export_type},
 };
 
@@ -222,57 +225,11 @@ impl ParserAndGenerator for CssParserAndGenerator {
           .runtime_requirements_mut()
           .insert(RuntimeGlobals::HAS_CSS_MODULES);
 
-        let mut source = ReplaceSource::new(source.clone());
-        let compilation = generate_context.compilation;
-        let mut init_fragments = ModuleInitFragments::default();
-        let mut context = TemplateContext {
-          compilation,
+        Ok(render_css_source_with_dependencies(
+          source,
           module,
-          runtime: generate_context.runtime,
-          init_fragments: &mut init_fragments,
-          concatenation_scope: generate_context.concatenation_scope.take(),
-          data: generate_context.data,
-          runtime_template: generate_context.runtime_template,
-        };
-
-        let module_graph = compilation.get_module_graph();
-        module.get_dependencies().iter().for_each(|id| {
-          let dep = module_graph.dependency_by_id(id);
-
-          if let Some(dependency) = dep.as_dependency_code_generation() {
-            if let Some(template) = dependency
-              .dependency_template()
-              .and_then(|template_type| compilation.get_dependency_template(template_type))
-            {
-              template.render(dependency, &mut source, &mut context)
-            } else {
-              panic!(
-                "Can not find dependency template of {:?}",
-                dependency.dependency_template()
-              );
-            }
-          }
-        });
-
-        if let Some(dependencies) = module.get_presentational_dependencies() {
-          dependencies.iter().for_each(|dependency| {
-            if let Some(template) = dependency
-              .dependency_template()
-              .and_then(|dependency_type| compilation.get_dependency_template(dependency_type))
-            {
-              template.render(dependency.as_ref(), &mut source, &mut context)
-            } else {
-              panic!(
-                "Can not find dependency template of {:?}",
-                dependency.dependency_template()
-              );
-            }
-          });
-        };
-
-        generate_context.concatenation_scope = context.concatenation_scope.take();
-
-        Ok(source.boxed())
+          generate_context,
+        ))
       }
       SourceType::JavaScript => CssModuleGenerator::new(source, module, generate_context, self.hot)
         .generate_javascript_source(),
