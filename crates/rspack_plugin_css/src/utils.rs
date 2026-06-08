@@ -138,10 +138,6 @@ pub(crate) fn css_dependency_meta(dependency: &BoxDependency) -> CssDependencyMe
   }
 }
 
-pub(crate) fn source_order_to_i32(source_order: u32) -> i32 {
-  source_order.try_into().unwrap_or(i32::MAX)
-}
-
 #[derive(Debug, Clone)]
 pub struct PresentationalDependencyHashUpdate<'a> {
   pub start: u32,

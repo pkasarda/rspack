@@ -80,7 +80,7 @@ impl ComposesOrderState {
     &mut self,
     local_classes: &[String],
     request: &str,
-    source_start: i32,
+    source_start: u32,
     dependency_id: DependencyId,
   ) {
     let rule_key = local_classes.join("\0");
@@ -111,7 +111,7 @@ impl ComposesOrderState {
   fn dependency_id_for_request(
     &mut self,
     request: &str,
-    source_start: i32,
+    source_start: u32,
     dependency_id: DependencyId,
   ) -> DependencyId {
     if let Some(dependency_id) = self.request_to_dependency.get(request) {
@@ -123,7 +123,7 @@ impl ComposesOrderState {
       .insert(request.to_string(), dependency_id);
     self
       .dependencies_in_source_order
-      .push((dependency_id, source_start));
+      .push((dependency_id, source_order_to_i32(source_start)));
     self.compose_dependency_count += 1;
     dependency_id
   }
@@ -162,6 +162,10 @@ impl ComposesOrderState {
     })
     .collect()
   }
+}
+
+fn source_order_to_i32(source_order: u32) -> i32 {
+  source_order.try_into().unwrap_or(i32::MAX)
 }
 
 fn is_custom_property_name(value: &str) -> bool {
@@ -1223,12 +1227,9 @@ impl<'context> CssModuleParser<'context> {
         self.export_type(),
       );
       dep_id = Some(*dep.id());
-      self.composes_order.track_request_order(
-        &local_classes,
-        from,
-        source_order_to_i32(range.start),
-        *dep.id(),
-      );
+      self
+        .composes_order
+        .track_request_order(&local_classes, from, range.start, *dep.id());
       self.dependencies.push(Box::new(dep));
     } else if from.is_none() {
       self
