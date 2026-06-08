@@ -54,6 +54,7 @@ pub type CssExportsRef<'a> = FxIndexMap<&'a str, &'a FxIndexSet<CssExport>>;
 pub struct CssParserAndGenerator {
   pub hot: bool,
   pub export_type: Option<CssExportType>,
+  exports_only: bool,
 }
 
 impl CssParserAndGenerator {
@@ -62,17 +63,15 @@ impl CssParserAndGenerator {
       .parser_options()
       .and_then(|options| options.get_css_module())
       .and_then(|options| options.export_type);
+    let exports_only = css_generator_options(module_options.generator_options())
+      .exports_only
+      .expect("should have exports_only");
 
     Self {
       export_type,
+      exports_only,
       ..Default::default()
     }
-  }
-
-  fn exports_only(generator_options: &CssModuleGeneratorOptions) -> bool {
-    generator_options
-      .exports_only
-      .expect("should have exports_only")
   }
 
   fn es_module(generator_options: &CssModuleGeneratorOptions) -> bool {
@@ -182,10 +181,6 @@ static REGEX_CUSTOM_PROPERTY_IDENT: LazyLock<Regex> = LazyLock::new(|| {
 #[async_trait::async_trait]
 impl ParserAndGenerator for CssParserAndGenerator {
   fn source_types(&self, module: &dyn Module, module_graph: &ModuleGraph) -> &[SourceType] {
-    let normal_module = module
-      .as_normal_module()
-      .expect("CssParserAndGenerator should only be used by NormalModule");
-    let generator_options = css_generator_options(normal_module.get_generator_options());
     let export_type = self.effective_export_type(module);
     if matches!(
       export_type,
@@ -194,7 +189,7 @@ impl ParserAndGenerator for CssParserAndGenerator {
       return CSS_MODULE_EXPORTS_ONLY_SOURCE_TYPE_LIST;
     }
 
-    if Self::exports_only(generator_options) {
+    if self.exports_only {
       return CSS_MODULE_EXPORTS_ONLY_SOURCE_TYPE_LIST;
     }
 
@@ -264,7 +259,7 @@ impl ParserAndGenerator for CssParserAndGenerator {
     let generator_options = css_generator_options(normal_module.get_generator_options());
     if !Self::es_module(generator_options) {
       Some("Module Concatenation is not implemented for CommonJS css exports".into())
-    } else if Self::exports_only(generator_options)
+    } else if self.exports_only
       || self
         .effective_export_type(module)
         .is_some_and(|export_type| export_type != CssExportType::Link)
