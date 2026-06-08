@@ -9,8 +9,7 @@ use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_core::{
   ChunkGraph, Compilation, CssBuildInfo, CssExportType, CssModuleGeneratorOptions, DependencyType,
   ExportsInfoArtifact, GenerateContext, Module, ModuleGraph, ModuleIdentifier, NormalModule,
-  ParseContext, ParseResult, ParserAndGenerator, RuntimeGlobals, RuntimeSpec, SourceType,
-  UsageState,
+  ParseContext, ParseResult, ParserAndGenerator, RuntimeSpec, SourceType, UsageState,
   rspack_sources::{BoxSource, Source},
 };
 pub use rspack_core::{CssExport, CssExports};
@@ -26,10 +25,7 @@ use smol_str::SmolStr;
 pub(crate) use source_builder::CssSourceBuilder;
 
 use crate::{
-  parser_and_generator::{
-    generator::{CssModuleGenerator, render_css_source_with_dependencies},
-    parser::CssModuleParser,
-  },
+  parser_and_generator::{generator::CssModuleGenerator, parser::CssModuleParser},
   utils::{css_generator_options, effective_css_export_type},
 };
 
@@ -219,20 +215,14 @@ impl ParserAndGenerator for CssParserAndGenerator {
     generate_context: &mut GenerateContext,
   ) -> Result<BoxSource> {
     match generate_context.requested_source_type {
-      SourceType::Css => {
-        generate_context
-          .runtime_template
-          .runtime_requirements_mut()
-          .insert(RuntimeGlobals::HAS_CSS_MODULES);
-
-        Ok(render_css_source_with_dependencies(
-          source,
-          module,
-          generate_context,
-        ))
+      SourceType::Css => Ok(
+        CssModuleGenerator::new(source.clone(), module, generate_context, self.hot)
+          .generate_css_source(),
+      ),
+      SourceType::JavaScript => {
+        CssModuleGenerator::new(source.clone(), module, generate_context, self.hot)
+          .generate_javascript_source()
       }
-      SourceType::JavaScript => CssModuleGenerator::new(source, module, generate_context, self.hot)
-        .generate_javascript_source(),
       _ => panic!(
         "Unsupported source type: {:?}",
         generate_context.requested_source_type
