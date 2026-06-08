@@ -36,12 +36,7 @@ impl CssUrlDependency {
     compilation: &Compilation,
   ) -> Option<String> {
     // url points to asset modules, and asset modules should have same codegen results for all runtimes
-    let (code_generation_results, module_generation_results) =
-      compilation.code_generation_results.inner();
-    let code_gen_result = code_generation_results
-      .get(identifier)
-      .and_then(|entry| entry.values().next())
-      .and_then(|id| module_generation_results.get(id))?;
+    let code_gen_result = compilation.code_generation_results.get_one(identifier);
 
     if let Some(url) = code_gen_result.data.get::<CodeGenerationDataUrl>() {
       Some(url.inner().to_string())
