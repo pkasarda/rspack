@@ -1,12 +1,12 @@
 use cow_utils::CowUtils;
 use rspack_core::{
-  CssLayer, CssModuleRenderCondition,
+  Context, CssLayer, CssModuleRenderCondition,
   rspack_sources::{
     BoxSource, ConcatSource, MapOptions, ObjectPool, RawStringSource, ReplaceSource, Source,
     SourceExt,
   },
 };
-use rspack_util::base64::encode_to_string;
+use rspack_util::{base64::encode_to_string, identifier::make_paths_relative};
 
 const CSS_UTF8_CHARSET: &str = r#"@charset "UTF-8";"#;
 
@@ -14,20 +14,26 @@ pub(crate) struct CssSourceBuilder {
   source: ConcatSource,
   has_charset: bool,
   include_sources_content: bool,
+  source_map_context: Context,
 }
 
 impl Default for CssSourceBuilder {
   fn default() -> Self {
-    Self::new(true)
+    Self::new(true, true, Default::default())
   }
 }
 
 impl CssSourceBuilder {
-  pub(crate) fn new(with_charset: bool) -> Self {
+  pub(crate) fn new(
+    with_charset: bool,
+    include_sources_content: bool,
+    source_map_context: Context,
+  ) -> Self {
     Self {
       source: ConcatSource::default(),
       has_charset: with_charset,
-      include_sources_content: true,
+      include_sources_content,
+      source_map_context,
     }
   }
 
@@ -91,10 +97,6 @@ impl CssSourceBuilder {
     self.has_charset = true;
   }
 
-  pub(crate) fn set_include_sources_content(&mut self, include_sources_content: bool) {
-    self.include_sources_content = include_sources_content;
-  }
-
   pub(crate) fn into_source(self) -> BoxSource {
     if self.has_charset {
       ConcatSource::new([
@@ -110,6 +112,7 @@ impl CssSourceBuilder {
 
   pub(crate) fn into_css_text(self) -> String {
     let include_sources_content = self.include_sources_content;
+    let source_map_context = self.source_map_context.clone();
     let source = self.into_source();
     let mut css_text = source
       .source()
@@ -118,6 +121,15 @@ impl CssSourceBuilder {
       .into_owned();
 
     if let Some(mut source_map) = source.map(&ObjectPool::default(), &MapOptions::default()) {
+      if !source_map_context.as_str().is_empty() {
+        source_map.set_sources(
+          source_map
+            .sources()
+            .iter()
+            .map(|source| make_paths_relative(source_map_context.as_str(), source))
+            .collect::<Vec<_>>(),
+        );
+      }
       if !include_sources_content {
         source_map.set_sources_content([]);
       }
@@ -212,7 +224,7 @@ mod tests {
 
   #[test]
   fn css_source_builder_adds_charset_once() {
-    let mut builder = CssSourceBuilder::new(true);
+    let mut builder = CssSourceBuilder::new(true, true, Default::default());
 
     builder.push_css_source(css_source(".a{}"), &[], false);
 
@@ -225,7 +237,7 @@ mod tests {
 
   #[test]
   fn css_source_builder_can_skip_charset() {
-    let mut builder = CssSourceBuilder::new(false);
+    let mut builder = CssSourceBuilder::new(false, true, Default::default());
 
     builder.push_css_source(css_source(".a{}"), &[], false);
 
@@ -237,7 +249,7 @@ mod tests {
     let conditions = css_import_conditions(
       r#"@import url("./a.css") layer(theme) supports(display: grid) screen;"#,
     );
-    let mut builder = CssSourceBuilder::new(false);
+    let mut builder = CssSourceBuilder::new(false, true, Default::default());
 
     builder.push_css_source(css_source(".a{}"), &conditions, false);
 
@@ -258,7 +270,7 @@ mod tests {
     let conditions = css_import_conditions(
       r#"@import url("./a.css") layer(theme) supports(display: grid) screen;"#,
     );
-    let mut builder = CssSourceBuilder::new(false);
+    let mut builder = CssSourceBuilder::new(false, true, Default::default());
 
     builder.push_css_source(
       css_source(
@@ -294,7 +306,7 @@ mod tests {
       .into_iter()
       .chain(inner_import)
       .collect::<Vec<_>>();
-    let mut builder = CssSourceBuilder::new(false);
+    let mut builder = CssSourceBuilder::new(false, true, Default::default());
 
     assert_eq!(conditions.len(), 2);
     builder.push_css_source(css_source(".a{}"), &conditions, false);
@@ -313,7 +325,7 @@ mod tests {
 
   #[test]
   fn css_source_builder_pushes_lines_explicitly() {
-    let mut builder = CssSourceBuilder::new(false);
+    let mut builder = CssSourceBuilder::new(false, true, Default::default());
 
     builder.push_css_source(css_source(".a{}"), &[], false);
     builder.push_line();
@@ -328,7 +340,7 @@ mod tests {
 
   #[test]
   fn css_source_builder_css_text_removes_auto_public_path_placeholder() {
-    let mut builder = CssSourceBuilder::new(true);
+    let mut builder = CssSourceBuilder::new(true, true, Default::default());
 
     builder.push_css_source(
       css_source(&concat_string!(

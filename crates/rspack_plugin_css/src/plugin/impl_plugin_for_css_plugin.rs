@@ -195,7 +195,7 @@ impl CssPlugin {
           s.spawn(
             |(compilation, chunk, module, cur_source, render_conditions, hooks)| async move {
               let mut post_module_container = {
-                let mut builder = CssSourceBuilder::new(false);
+                let mut builder = CssSourceBuilder::new(false, true, Default::default());
                 if builder.push_css_source(
                   cur_source.clone(),
                   &render_conditions,
@@ -246,7 +246,7 @@ impl CssPlugin {
       .filter_map(|module| css_module_resource(*module))
       .collect::<HashSet<_>>();
 
-    let mut builder = CssSourceBuilder::new(false);
+    let mut builder = CssSourceBuilder::new(false, true, Default::default());
     for module in ordered_css_modules {
       if css_module_is_import_dependency(*module)
         && css_render_conditions_from_module(*module).is_empty()

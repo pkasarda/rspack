@@ -429,9 +429,11 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
   }
 
   fn css_source_builder(&self, with_charset: bool) -> CssSourceBuilder {
-    let mut builder = CssSourceBuilder::new(with_charset);
-    builder.set_include_sources_content(!self.module.get_source_map_kind().no_sources());
-    builder
+    CssSourceBuilder::new(
+      with_charset,
+      !self.module.get_source_map_kind().no_sources(),
+      self.generate_context.compilation.options.context.clone(),
+    )
   }
 
   fn render_require_call_parts(&mut self) -> (String, &'static str, &'static str) {
