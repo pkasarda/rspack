@@ -664,6 +664,11 @@ impl ConcatenatedModule {
     modules.sort_unstable_by_key(|a| a.id);
     let id = Self::create_identifier(&root_module_ctxt, &modules, hash_function);
     let module_graph = compilation.get_module_graph();
+    let concatenated_modules = modules
+      .iter()
+      .map(|module| module.id)
+      .collect::<IdentifierSet>();
+    root_module_ctxt.code_generation_dependencies = None;
     for module in &modules {
       let Some(dependencies) = module_graph
         .module_by_identifier(&module.id)
@@ -671,10 +676,18 @@ impl ConcatenatedModule {
       else {
         continue;
       };
-      root_module_ctxt
-        .code_generation_dependencies
-        .get_or_insert_with(Vec::new)
-        .extend(dependencies.iter().cloned());
+      for dependency in dependencies {
+        let references_concatenated_module = module_graph
+          .module_identifier_by_dependency_id(dependency.id())
+          .is_some_and(|module_id| concatenated_modules.contains(module_id));
+        if references_concatenated_module {
+          continue;
+        }
+        root_module_ctxt
+          .code_generation_dependencies
+          .get_or_insert_with(Vec::new)
+          .push(dependency.clone());
+      }
     }
     Self::new(id.as_str().into(), root_module_ctxt, modules, runtime)
   }
