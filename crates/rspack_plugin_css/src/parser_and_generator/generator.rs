@@ -213,6 +213,62 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     }
   }
 
+  fn generate_js_exports(&mut self) -> Result<()> {
+    if self.generate_context.concatenation_scope.is_some() {
+      if let Some(exports) = self.collect_used_css_exports() {
+        self.concat_css_exports_inner(None, Some(exports))?;
+      }
+      return Ok(());
+    }
+
+    let (ns_obj, left, right) = self.render_namespace_object_parts();
+
+    let exports_str = if let Some(exports) = self.collect_used_css_exports() {
+      self.css_modules_exports_to_string(exports, &ns_obj, left, right)
+    } else {
+      let hmr_code = self.render_accept_hmr();
+      let module_argument = self.module_argument();
+      concat_string!(
+        ns_obj,
+        left,
+        module_argument,
+        ".exports = {}",
+        right,
+        ";\n",
+        hmr_code
+      )
+    };
+
+    self.concat_source.add(RawStringSource::from(exports_str));
+    Ok(())
+  }
+
+  fn css_modules_exports_to_string<'b>(
+    &mut self,
+    exports: rspack_util::fx_hash::FxIndexMap<&'b str, &'b FxIndexSet<CssExport>>,
+    ns_obj: &str,
+    left: &str,
+    right: &str,
+  ) -> String {
+    let (decl_name, exports_string) = self.stringified_exports(exports);
+    let hmr_code = self.render_exports_hmr(decl_name);
+    let module_argument = self.module_argument();
+
+    concat_string!(
+      exports_string,
+      "\n",
+      hmr_code,
+      "\n",
+      ns_obj,
+      left,
+      module_argument,
+      ".exports = ",
+      decl_name,
+      right,
+      ";\n"
+    )
+  }
+
   fn child_generator<'b>(
     &'b mut self,
     source: BoxSource,
@@ -635,62 +691,6 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       .runtime_template
       .render_runtime_globals(&RuntimeGlobals::CSS_STYLE_SHEET);
     concat_string!(css_style_sheet, "(", css, ")")
-  }
-
-  fn generate_js_exports(&mut self) -> Result<()> {
-    if self.generate_context.concatenation_scope.is_some() {
-      if let Some(exports) = self.collect_used_css_exports() {
-        self.concat_css_exports_inner(None, Some(exports))?;
-      }
-      return Ok(());
-    }
-
-    let (ns_obj, left, right) = self.render_namespace_object_parts();
-
-    let exports_str = if let Some(exports) = self.collect_used_css_exports() {
-      self.css_modules_exports_to_string(exports, &ns_obj, left, right)
-    } else {
-      let hmr_code = self.render_accept_hmr();
-      let module_argument = self.module_argument();
-      concat_string!(
-        ns_obj,
-        left,
-        module_argument,
-        ".exports = {}",
-        right,
-        ";\n",
-        hmr_code
-      )
-    };
-
-    self.concat_source.add(RawStringSource::from(exports_str));
-    Ok(())
-  }
-
-  fn css_modules_exports_to_string<'b>(
-    &mut self,
-    exports: rspack_util::fx_hash::FxIndexMap<&'b str, &'b FxIndexSet<CssExport>>,
-    ns_obj: &str,
-    left: &str,
-    right: &str,
-  ) -> String {
-    let (decl_name, exports_string) = self.stringified_exports(exports);
-    let hmr_code = self.render_exports_hmr(decl_name);
-    let module_argument = self.module_argument();
-
-    concat_string!(
-      exports_string,
-      "\n",
-      hmr_code,
-      "\n",
-      ns_obj,
-      left,
-      module_argument,
-      ".exports = ",
-      decl_name,
-      right,
-      ";\n"
-    )
   }
 
   fn concat_css_exports_with_default(&mut self, default_expr: Option<String>) -> Result<()> {

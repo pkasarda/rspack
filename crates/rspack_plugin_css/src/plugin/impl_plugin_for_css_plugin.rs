@@ -52,10 +52,6 @@ type ArcCssModulesPluginHooks = Arc<AtomicRefCell<CssModulesPluginHooks>>;
 static COMPILATION_HOOKS_MAP: LazyLock<FxDashMap<CompilationId, ArcCssModulesPluginHooks>> =
   LazyLock::new(Default::default);
 
-struct CssModuleDebugInfo<'a> {
-  pub module: &'a dyn Module,
-}
-
 impl CssPlugin {
   pub fn get_compilation_hooks(id: CompilationId) -> ArcCssModulesPluginHooks {
     if !COMPILATION_HOOKS_MAP.contains_key(&id) {
@@ -173,37 +169,37 @@ impl CssPlugin {
           .code_generation_results
           .get(module_id, Some(chunk.runtime()));
 
-        Ok(code_gen_result.get(&SourceType::Css).map(|source| {
-          (
-            CssModuleDebugInfo { module: *module },
-            render_conditions,
-            source,
-          )
-        }))
+        Ok(
+          code_gen_result
+            .get(&SourceType::Css)
+            .map(|source| (*module, render_conditions, source)),
+        )
       })
       .collect::<Result<Vec<_>>>()?;
 
     let module_sources = rspack_parallel::scope::<_, Result<_>>(|token| {
-      module_sources.into_iter().flatten().for_each(
-        |(debug_info, render_conditions, cur_source)| {
+      module_sources
+        .into_iter()
+        .flatten()
+        .for_each(|(module, render_conditions, cur_source)| {
           let s = unsafe {
             token.used((
               compilation,
               chunk.ukey(),
-              debug_info,
+              module,
               cur_source,
               render_conditions,
               hooks,
             ))
           };
           s.spawn(
-            |(compilation, chunk, debug_info, cur_source, render_conditions, hooks)| async move {
+            |(compilation, chunk, module, cur_source, render_conditions, hooks)| async move {
               let mut post_module_container = {
                 let mut builder = CssSourceBuilder::new(false);
                 if builder.push_css_source(
                   cur_source.clone(),
                   &render_conditions,
-                  css_module_has_charset(debug_info.module),
+                  css_module_has_charset(module),
                 ) {
                   builder.push_line();
                 }
@@ -215,19 +211,13 @@ impl CssPlugin {
               let chunk_ukey = chunk.as_u32().into();
               hooks
                 .render_module_package
-                .call(
-                  compilation,
-                  &chunk_ukey,
-                  debug_info.module,
-                  &mut post_module_container,
-                )
+                .call(compilation, &chunk_ukey, module, &mut post_module_container)
                 .await?;
 
-              Ok((debug_info.module.identifier(), post_module_container.source))
+              Ok((module.identifier(), post_module_container.source))
             },
           );
-        },
-      );
+        });
     })
     .await
     .into_iter()
