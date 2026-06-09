@@ -10,10 +10,9 @@ use std::{
 use regex::Regex;
 use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_core::{
-  ChunkGraph, Compilation, CssBuildInfo, CssExportType, CssModuleGeneratorOptions, DependencyType,
-  ExportsInfoArtifact, GenerateContext, Module, ModuleGraph, ModuleIdentifier, NormalModule,
-  ParseContext, ParseResult, ParserAndGenerator, ResolvedModuleOptions, RuntimeSpec, SourceType,
-  UsageState,
+  ChunkGraph, Compilation, CssBuildInfo, CssExportType, DependencyType, ExportsInfoArtifact,
+  GenerateContext, Module, ModuleGraph, ModuleIdentifier, NormalModule, ParseContext, ParseResult,
+  ParserAndGenerator, ResolvedModuleOptions, RuntimeSpec, SourceType, UsageState,
   rspack_sources::{BoxSource, Source},
 };
 pub use rspack_core::{CssExport, CssExports};
@@ -54,7 +53,8 @@ pub type CssExportsRef<'a> = FxIndexMap<&'a str, &'a FxIndexSet<CssExport>>;
 pub struct CssParserAndGenerator {
   pub hot: bool,
   pub export_type: Option<CssExportType>,
-  exports_only: bool,
+  pub exports_only: bool,
+  pub es_module: bool,
 }
 
 impl CssParserAndGenerator {
@@ -63,19 +63,18 @@ impl CssParserAndGenerator {
       .parser_options()
       .and_then(|options| options.get_css_module())
       .and_then(|options| options.export_type);
-    let exports_only = css_generator_options(module_options.generator_options())
+    let generator_options = css_generator_options(module_options.generator_options());
+    let exports_only = generator_options
       .exports_only
       .expect("should have exports_only");
+    let es_module = generator_options.es_module.expect("should have es_module");
 
     Self {
       export_type,
       exports_only,
+      es_module,
       ..Default::default()
     }
-  }
-
-  fn es_module(generator_options: &CssModuleGeneratorOptions) -> bool {
-    generator_options.es_module.expect("should have es_module")
   }
 
   fn effective_export_type(&self, module: &dyn Module) -> Option<CssExportType> {
@@ -233,13 +232,23 @@ impl ParserAndGenerator for CssParserAndGenerator {
   ) -> Result<BoxSource> {
     match generate_context.requested_source_type {
       SourceType::Css => Ok(
-        CssModuleGenerator::new(source.clone(), module, generate_context, self.hot)
-          .generate_css_source(),
+        CssModuleGenerator::new(
+          source.clone(),
+          module,
+          generate_context,
+          self.hot,
+          self.es_module,
+        )
+        .generate_css_source(),
       ),
-      SourceType::JavaScript => {
-        CssModuleGenerator::new(source.clone(), module, generate_context, self.hot)
-          .generate_javascript_source()
-      }
+      SourceType::JavaScript => CssModuleGenerator::new(
+        source.clone(),
+        module,
+        generate_context,
+        self.hot,
+        self.es_module,
+      )
+      .generate_javascript_source(),
       _ => panic!(
         "Unsupported source type: {:?}",
         generate_context.requested_source_type
@@ -253,11 +262,7 @@ impl ParserAndGenerator for CssParserAndGenerator {
     _mg: &ModuleGraph,
     _cg: &ChunkGraph,
   ) -> Option<Cow<'static, str>> {
-    let normal_module = module
-      .as_normal_module()
-      .expect("CssParserAndGenerator should only be used by NormalModule");
-    let generator_options = css_generator_options(normal_module.get_generator_options());
-    if !Self::es_module(generator_options) {
+    if !self.es_module {
       Some("Module Concatenation is not implemented for CommonJS css exports".into())
     } else if self.exports_only
       || self
@@ -279,7 +284,8 @@ impl ParserAndGenerator for CssParserAndGenerator {
     _runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    Self::es_module(css_generator_options(module.get_generator_options())).dyn_hash(&mut hasher);
+    self.es_module.dyn_hash(&mut hasher);
+    self.exports_only.dyn_hash(&mut hasher);
     self.effective_export_type(module).dyn_hash(&mut hasher);
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }

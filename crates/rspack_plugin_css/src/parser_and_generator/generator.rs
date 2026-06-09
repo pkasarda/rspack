@@ -107,6 +107,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     module: &'a dyn Module,
     generate_context: &'a mut GenerateContext<'g>,
     with_hmr: bool,
+    es_module: bool,
   ) -> Self {
     let css_build_info = module
       .build_info()
@@ -125,7 +126,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       exports_only: generator_options
         .exports_only
         .expect("should have exports_only"),
-      es_module: generator_options.es_module.expect("should have es_module"),
+      es_module,
       module_argument: None,
       concat_source: Default::default(),
     }
@@ -217,7 +218,13 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     source: BoxSource,
     module: &'b dyn Module,
   ) -> CssModuleGenerator<'b, 'g> {
-    CssModuleGenerator::new(source, module, self.generate_context, self.with_hmr)
+    CssModuleGenerator::new(
+      source,
+      module,
+      self.generate_context,
+      self.with_hmr,
+      self.es_module,
+    )
   }
 
   pub(crate) fn render_css_module_source(&mut self) -> BoxSource {
