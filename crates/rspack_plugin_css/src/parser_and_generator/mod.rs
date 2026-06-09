@@ -10,9 +10,10 @@ use std::{
 use regex::Regex;
 use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_core::{
-  ChunkGraph, Compilation, CssBuildInfo, CssExportType, DependencyType, ExportsInfoArtifact,
+  BuildMetaDefaultObject, BuildMetaExportsType, ChunkGraph, Compilation,
+  CssAutoOrModuleParserOptions, CssBuildInfo, CssExportType, DependencyType, ExportsInfoArtifact,
   GenerateContext, Module, ModuleGraph, ModuleIdentifier, NormalModule, ParseContext, ParseResult,
-  ParserAndGenerator, ResolvedModuleOptions, RuntimeSpec, SourceType, UsageState,
+  ParserAndGenerator, ParserOptions, ResolvedModuleOptions, RuntimeSpec, SourceType, UsageState,
   rspack_sources::{BoxSource, Source},
 };
 pub use rspack_core::{CssExport, CssExports};
@@ -85,6 +86,12 @@ impl CssParserAndGenerator {
       .and_then(|css| css.export_type)
       .or(self.export_type)
   }
+}
+
+fn css_parser_options(parser_options: Option<&ParserOptions>) -> &CssAutoOrModuleParserOptions {
+  parser_options
+    .and_then(ParserOptions::get_css_module)
+    .expect("CssParserOptions should be normalized to CssAutoOrModule")
 }
 
 pub fn get_used_exports<'a>(
@@ -221,7 +228,41 @@ impl ParserAndGenerator for CssParserAndGenerator {
     &mut self,
     parse_context: ParseContext<'a>,
   ) -> Result<TWithDiagnosticArray<ParseResult>> {
-    CssModuleParser::new(parse_context).parse().await
+    let generator_options = css_generator_options(parse_context.module_generator_options);
+    let parser_options = css_parser_options(parse_context.module_parser_options);
+    let named_exports = parser_options
+      .named_exports
+      .expect("should have named_exports");
+
+    {
+      let build_info = &mut *parse_context.build_info;
+      let build_meta = &mut *parse_context.build_meta;
+
+      build_info.strict = true;
+      build_meta.exports_type = if named_exports {
+        BuildMetaExportsType::Namespace
+      } else {
+        BuildMetaExportsType::Default
+      };
+      build_meta.default_object = if named_exports {
+        BuildMetaDefaultObject::False
+      } else {
+        BuildMetaDefaultObject::Redirect
+      };
+    }
+
+    let exports_only = generator_options
+      .exports_only
+      .expect("should have exports_only");
+
+    CssModuleParser::new(
+      generator_options,
+      parser_options,
+      exports_only,
+      parse_context,
+    )
+    .parse()
+    .await
   }
 
   async fn generate(
