@@ -11,111 +11,89 @@ import icssStylesheet, { "sheet-button" as icssStylesheetButton } from "./icss-s
 import fooStylesheet from "./foo.css" with { type: "css" };
 
 it("should export CSS text as default when exportType is text (css/module)", () => {
-	expect(typeof moduleText).toBe("string");
-	expect(moduleText).toContain(".module-text_css-class");
-	expect(moduleText).toContain("color: red");
-	expect(moduleText).toContain("background: white");
-	expect(moduleText).toContain(".module-text_css-another-class");
-	expect(moduleText).toContain("font-size: 16px");
+  expect(typeof moduleText).toBe("string");
+  expect(moduleText).toMatchSnapshot();
 
-	expect(moduleTextClass).toBeTruthy();
+  expect(moduleTextClass).toBeTruthy();
 });
 
 
 it("should export CSS text as default when exportType is text (css/auto)", () => {
-	expect(typeof autoText).toBe("string");
-	expect(autoText).toContain(".auto-text-class");
-	expect(autoText).toContain("color: green");
+  expect(typeof autoText).toBe("string");
+  expect(autoText).toContain(".auto-text-class");
+  expect(autoText).toContain("color: green");
 });
 
 
 it("should export CSS text when exportType is text and esModule is false (css/module)", () => {
-	// Named export, warn
-	expect(moduleTextNoEsm["no-esm-text"]).toBeTruthy();
-	expect(moduleTextNoEsm.default["no-esm-text"]).toBeTruthy();
-	expect(moduleTextNoEsm["no-esm-text"]).toBe("module-text-no-esm_css-no-esm-text");
-	expect(moduleTextNoEsm.another).toBe("module-text-no-esm_css-another");
-	expect(moduleTextNoEsm.default.default).toContain(
-		".module-text-no-esm_css-no-esm-text"
-	);
-	expect(moduleTextNoEsm.default.default).toContain("color: orange");
-	expect(moduleTextNoEsm.default.default).toContain(
-		".module-text-no-esm_css-another"
-	);
-	expect(moduleTextNoEsm.default.default).toContain("text-align: center");
+  // Named export, warn
+  expect(moduleTextNoEsm["no-esm-text"]).toBeTruthy();
+  expect(moduleTextNoEsm.default["no-esm-text"]).toBeTruthy();
+  expect(moduleTextNoEsm).toMatchSnapshot();
 });
 
 
 it("should export CSS text when exportType is text and esModule is false (css/auto)", () => {
-	expect(typeof autoTextNoEsm).toBe("string");
-	expect(autoTextNoEsm).toContain(".auto-no-esm-text");
-	expect(autoTextNoEsm).toContain("color: brown");
+  expect(typeof autoTextNoEsm).toBe("string");
+  expect(autoTextNoEsm).toContain(".auto-no-esm-text");
+  expect(autoTextNoEsm).toContain("color: brown");
 });
 
 it("should handle @import with layer, supports, and media queries", () => {
-	expect(typeof moduleWithImports).toBe("string");
-	expect(typeof parentModuleWithImports).toBe("string");
-	expect(parentModuleWithImports).toContain("main-class");
-	expect(parentModuleWithImports).toContain("background-image: url(");
-	expect(parentModuleWithImports).toContain("@layer utilities");
-	expect(parentModuleWithImports).toContain("@supports (display: grid)");
-	expect(parentModuleWithImports).toContain("@media screen and (min-width: 768px)");
-	expect(parentModuleWithImports).toContain("@layer components");
-	expect(parentModuleWithImports).toContain("@supports (display: flex)");
-	expect(parentModuleWithImports).toContain(
-		"@media screen and (max-width: 1024px)"
-	);
+  expect(typeof moduleWithImports).toBe("string");
+  expect(typeof parentModuleWithImports).toBe("string");
+  expect(parentModuleWithImports).toMatchSnapshot();
 });
 
 it("should handle ICSS :import with exportType text", () => {
-	expect(typeof icssText).toBe("string");
-	expect(typeof icssTextButton).toBe("string");
-	expect(icssText).toContain("background-color: #007bff");
-	expect(icssText).toContain("border-color: #6c757d");
-	expect(icssText).toContain("padding: 16px");
+  expect(typeof icssText).toBe("string");
+  expect(typeof icssTextButton).toBe("string");
+  expect(icssText).toContain("background-color: #007bff");
+  expect(icssText).toContain("border-color: #6c757d");
+  expect(icssText).toContain("padding: 16px");
 });
 
 it("should handle ICSS :import with exportType css-style-sheet", () => {
-	expect(typeof icssStylesheetButton).toBe("string");
-	expect(icssStylesheet).toBeInstanceOf(CSSStyleSheet);
-	expect(icssStylesheet.cssRules.length).toBeGreaterThan(0);
-	
-	const rules = Array.from(icssStylesheet.cssRules);
-	const buttonRule = rules.find(rule => rule.selectorText && rule.selectorText.includes("sheet-button"));
-	expect(buttonRule).toBeDefined();
-	expect(buttonRule.style["background-color"]).toBe("#007bff");
-	expect(buttonRule.style.color).toBe("white");
-	
-	const badgeRule = rules.find(rule => rule.selectorText && rule.selectorText.includes("sheet-badge"));
-	expect(badgeRule).toBeDefined();
-	expect(badgeRule.style["background-color"]).toBe("#6c757d");
-	expect(badgeRule.style["border-radius"]).toBe("4px");
+  expect(typeof icssStylesheetButton).toBe("string");
+  expect(icssStylesheet).toBeInstanceOf(CSSStyleSheet);
+  expect(icssStylesheet.cssRules.length).toBeGreaterThan(0);
+
+  const rules = Array.from(icssStylesheet.cssRules);
+  const buttonRule = rules.find(rule => rule.selectorText && rule.selectorText.includes("sheet-button"));
+  expect(buttonRule).toBeDefined();
+  expect(buttonRule.style["background-color"]).toBe("#007bff");
+  expect(buttonRule.style.color).toBe("white");
+
+  const badgeRule = rules.find(rule => rule.selectorText && rule.selectorText.includes("sheet-badge"));
+  expect(badgeRule).toBeDefined();
+  expect(badgeRule.style["background-color"]).toBe("#6c757d");
+  expect(badgeRule.style["border-radius"]).toBe("4px");
 });
 
 it("should export CSSStyleSheet when exportType is css-style-sheet (css/auto)", () => {
-	expect(stylesheet).toBeInstanceOf(CSSStyleSheet);
-	expect(stylesheet.cssRules.length).toBeGreaterThan(0);
-	
-	const rules = Array.from(stylesheet.cssRules);
-	const stylesheetRule = rules.find(rule => rule.selectorText === ".stylesheet-class");
-	expect(stylesheetRule).toBeDefined();
-	expect(stylesheetRule.style.color).toBe("purple");
-	expect(stylesheetRule.style["font-weight"]).toBe("bold");
+  expect(stylesheet).toBeInstanceOf(CSSStyleSheet);
+  expect(stylesheet.cssRules.length).toBeGreaterThan(0);
+
+  const rules = Array.from(stylesheet.cssRules);
+  const stylesheetRule = rules.find(rule => rule.selectorText === ".stylesheet-class");
+  expect(stylesheetRule).toBeDefined();
+  expect(stylesheetRule.style.color).toBe("purple");
+  expect(stylesheetRule.style["font-weight"]).toBe("bold");
 });
 
 it("should export CSSStyleSheet when exportType is css-style-sheet (css/module)", () => {
-	expect(typeof moduleStylesheetSecondary).toBe("string");
-	expect(moduleStylesheet).toBeInstanceOf(CSSStyleSheet);
-	expect(moduleStylesheet.cssRules.length).toBeGreaterThan(0);
-	
-	const rules = Array.from(moduleStylesheet.cssRules);
-	const moduleRule = rules.find(rule => rule.selectorText && rule.selectorText.includes("module-stylesheet"));
-	expect(moduleRule).toBeDefined();
-	expect(moduleRule.style.color).toBe("orange");
-	expect(moduleRule.style.padding).toBe("20px");
+  expect(typeof moduleStylesheetSecondary).toBe("string");
+  expect(moduleStylesheet).toBeInstanceOf(CSSStyleSheet);
+  expect(moduleStylesheet.cssRules.length).toBeGreaterThan(0);
+
+  const rules = Array.from(moduleStylesheet.cssRules);
+  const moduleRule = rules.find(rule => rule.selectorText && rule.selectorText.includes("module-stylesheet"));
+  expect(moduleRule).toBeDefined();
+  expect(moduleRule.style.color).toBe("orange");
+  expect(moduleRule.style.padding).toBe("20px");
 });
 
 
 it("should export CSSStyleSheet when imported with { type: 'css' } even with existing exportType text instance", () => {
-	expect(fooStylesheet).toBeInstanceOf(CSSStyleSheet);
+  expect(fooStylesheet).toBeInstanceOf(CSSStyleSheet);
 });
