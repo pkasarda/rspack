@@ -16,7 +16,7 @@ use rspack_core::{
   },
   diagnostics::MinifyError,
   rspack_sources::{
-    ConcatSource, MapOptions, ObjectPool, RawStringSource, Source, SourceExt, SourceMapSource,
+    ConcatSource, MapOptions, ObjectPool, RawStringSource, SourceExt, SourceMapSource,
     SourceMapSourceOptions,
   },
 };
