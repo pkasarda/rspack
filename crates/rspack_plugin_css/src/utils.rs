@@ -418,7 +418,7 @@ fn css_module_id_for_local_ident(compilation: &Compilation, module: &dyn Module)
     .build_info()
     .css
     .as_deref()
-    .is_some_and(|css_build_info| css_build_info.render_conditions().next().is_some());
+    .is_some_and(|css_build_info| css_build_info.has_render_conditions());
   if !needs_stable_long_id {
     return module_id.to_string();
   }

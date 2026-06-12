@@ -8,8 +8,8 @@
 - Bundle: hi_txt.chunk.CURRENT_HASH.js
 - Bundle: stylesheet_css.chunk.CURRENT_HASH.js
 - Manifest: main.LAST_HASH.hot-update.json, size: 45
-- Update: main.LAST_HASH.hot-update.js, size: 410
-- Update: stylesheet_css.LAST_HASH.hot-update.js, size: 357
+- Update: main.LAST_HASH.hot-update.js, size: 397
+- Update: stylesheet_css.LAST_HASH.hot-update.js, size: 344
 
 ## Manifest
 
@@ -36,8 +36,9 @@
 "use strict";
 self["rspackHotUpdate"]("main", {
 "./imported.css?6c24"(module, __unused_rspack_exports, __webpack_require__) {
-__webpack_require__.r(module.exports = {});
-module.exports.default = ".imported-class-updated {\n\tcolor: purple;\n\tfont-style: italic;\n}\n";
+__webpack_require__.r(module.exports = {
+	"default": ".imported-class-updated {\n\tcolor: purple;\n\tfont-style: italic;\n}\n"
+});
 
 
 },
@@ -68,8 +69,9 @@ __webpack_require__.h = () => ("CURRENT_HASH")
 self["rspackHotUpdate"]("stylesheet_css", {
 "./imported.css?4c2a"(module, __unused_rspack_exports, __webpack_require__) {
 var __css_style_sheet = __webpack_require__.css(".imported-class-updated {\n\tcolor: purple;\n\tfont-style: italic;\n}\n");
-__webpack_require__.r(module.exports = {});
-module.exports.default = __css_style_sheet;
+__webpack_require__.r(module.exports = {
+	"default": __css_style_sheet
+});
 
 
 },

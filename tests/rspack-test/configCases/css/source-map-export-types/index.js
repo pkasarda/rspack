@@ -240,8 +240,8 @@ it(`should generate a valid source map for ${label}`, () => {
   // means sourcesContent here is the emitted runtime call (e.g.
   // `__webpack_require__.r(module.exports = { "default": "…" });` for
   // `text`, `__webpack_require__.is(<id>, "…");` for `style`, or the
-  // `new CSSStyleSheet(); sheet.replaceSync(cssText)` IIFE for
-  // `css-style-sheet`), not the raw CSS or just its JS literal form.
+  // runtime stylesheet helper for `css-style-sheet`), not the raw CSS or
+  // just its JS literal form.
   const cssModuleSourceIdx = jsMap.sources.findIndex((s) =>
     s.includes(expectedSourceFile)
   );
@@ -256,8 +256,8 @@ it(`should generate a valid source map for ${label}`, () => {
     expect(cssModuleSourcesContent).toContain("module.exports");
     expect(cssModuleSourcesContent).toContain('"default":');
   } else if (exportType === "css-style-sheet") {
-    expect(cssModuleSourcesContent).toContain("new CSSStyleSheet()");
-    expect(cssModuleSourcesContent).toContain("replaceSync");
+    expect(cssModuleSourcesContent).toContain("__webpack_require__.css");
+    expect(cssModuleSourcesContent).toContain("__css_style_sheet");
   }
   // CSS payload still has to be reachable from sourcesContent so DevTools
   // can search across module sources.
