@@ -4,7 +4,7 @@ use rspack_core::{
   Module, ModuleCodeGenerationContext, RuntimeCodeTemplate, RuntimeGlobals, SourceType,
   chunk_graph_chunk::ChunkIdSet,
   get_undo_path,
-  rspack_sources::{BoxSource, ConcatSource, RawStringSource, ReplaceSource, Source, SourceExt},
+  rspack_sources::{BoxSource, ConcatSource, RawStringSource, ReplaceSource, SourceExt},
 };
 use rspack_error::{Result, ToStringResultToRspackResultExt};
 
