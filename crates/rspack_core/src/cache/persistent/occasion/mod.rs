@@ -1,9 +1,13 @@
+pub mod code_generate;
 pub mod make;
 pub mod meta;
 pub mod minimize;
 
 use std::future::Future;
 
+pub use code_generate::{
+  CachedCodeGenerationResult, CodeGenerateOccasion, CodeGeneratePersistentCacheArtifact,
+};
 pub use make::MakeOccasion;
 pub use meta::MetaOccasion;
 pub use minimize::{

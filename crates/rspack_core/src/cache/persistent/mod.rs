@@ -22,7 +22,7 @@ use self::{
   build_dependencies::{BuildDeps, BuildDepsOptions},
   codec::CacheCodec,
   context::CacheContext,
-  occasion::{MakeOccasion, MetaOccasion, MinimizeOccasion},
+  occasion::{CodeGenerateOccasion, MakeOccasion, MetaOccasion, MinimizeOccasion},
   snapshot::{Snapshot, SnapshotOptions},
   storage::{StorageOptions, create_storage},
 };
@@ -55,6 +55,7 @@ pub struct PersistentCache {
   snapshot: Arc<Snapshot>,
   make_occasion: MakeOccasion,
   meta_occasion: MetaOccasion,
+  code_generate_occasion: CodeGenerateOccasion,
   minimize_occasion: MinimizeOccasion,
 }
 
@@ -109,6 +110,7 @@ impl PersistentCache {
       snapshot,
       make_occasion: MakeOccasion::new(codec.clone()),
       meta_occasion: MetaOccasion::new(codec.clone()),
+      code_generate_occasion: CodeGenerateOccasion::new(codec.clone()),
       minimize_occasion: MinimizeOccasion::new(codec),
     }
   }
@@ -212,6 +214,32 @@ impl Cache for PersistentCache {
       &self.make_occasion,
       &compilation.build_module_graph_artifact,
     );
+  }
+
+  async fn before_modules_codegen(&mut self, compilation: &mut Compilation) {
+    if compilation.is_rebuild {
+      return;
+    }
+
+    let artifact = self
+      .ctx
+      .load_occasion(&self.code_generate_occasion)
+      .await
+      .unwrap_or_default();
+    compilation
+      .code_generate_cache_artifact
+      .set_persistent_cache_artifact(artifact);
+  }
+
+  async fn after_modules_codegen(&mut self, compilation: &Compilation) {
+    if let Some(artifact) = compilation
+      .code_generate_cache_artifact
+      .persistent_cache_artifact()
+    {
+      self
+        .ctx
+        .save_occasion(&self.code_generate_occasion, artifact);
+    }
   }
 
   async fn before_process_assets(&mut self, compilation: &mut Compilation) {

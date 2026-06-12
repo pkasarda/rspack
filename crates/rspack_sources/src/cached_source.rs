@@ -29,7 +29,7 @@ use crate::{
   source::SourceValue,
 };
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct CachedData {
   hash: OnceLock<u64>,
   size: OnceLock<usize>,
@@ -113,6 +113,7 @@ impl ArchiveWith<CachedData> for CachedDataAsCache {
 
   #[inline]
   fn resolve_with(field: &CachedData, resolver: Self::Resolver, out: Place<Self::Archived>) {
+    println!("Resolving CachedData: {:#?}", field);
     let hash = field.hash.get().copied();
     let size = field.size.get().copied();
     let is_ascii = field.is_ascii.get().copied();
@@ -180,6 +181,7 @@ where
     deserializer: &mut D,
   ) -> rspack_cacheable::Result<CachedData> {
     let cache = CachedData::default();
+    println!("Deserializing CachedData: {:#?}", cache);
 
     if let Some(hash) = field.0.deserialize(deserializer)? {
       let _ = cache.hash.set(hash);
