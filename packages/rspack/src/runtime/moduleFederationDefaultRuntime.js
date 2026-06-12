@@ -46,6 +46,146 @@ export default function () {
     const initializeSharingInitTokens = {};
     const containerShareScope =
       __webpack_require__.initializeExposesData?.shareScope;
+    const toList = (value) => (Array.isArray(value) ? value : []);
+    const pushUnique = (target, values) => {
+      for (const value of values) {
+        if (value !== undefined && value !== null && !target.includes(value)) {
+          target.push(value);
+        }
+      }
+    };
+    const getAffectedConsumerModuleIds = (remoteModuleIds) => {
+      const consumerModuleIds = [];
+      const queue = [];
+      const consumerMapping =
+        __webpack_require__.remotesLoadingData
+          ?.remoteModuleIdToConsumerModuleIds ?? {};
+      const parentMapping =
+        __webpack_require__.remotesLoadingData
+          ?.consumerModuleIdToParentModuleIds ?? {};
+
+      for (const remoteModuleId of remoteModuleIds) {
+        pushUnique(queue, toList(consumerMapping[remoteModuleId]));
+      }
+      for (let i = 0; i < queue.length; i++) {
+        const consumerModuleId = queue[i];
+        if (consumerModuleIds.includes(consumerModuleId)) continue;
+        consumerModuleIds.push(consumerModuleId);
+        pushUnique(queue, toList(parentMapping[consumerModuleId]));
+      }
+      return consumerModuleIds;
+    };
+    const deleteModuleCache = (moduleIds) => {
+      for (const moduleId of moduleIds) {
+        delete __webpack_require__.c[moduleId];
+      }
+    };
+    const clearRemoteCache = (options) => {
+      const name = typeof options === 'string' ? options : options?.name;
+      if (!name) {
+        return Promise.reject(
+          new Error('clearRemoteCache requires a remote name'),
+        );
+      }
+
+      const remoteKey =
+        typeof options === 'object' && options
+          ? options.remoteKey || name
+          : name;
+      const remotesLoadingData = __webpack_require__.remotesLoadingData ?? {};
+      const idToExternalAndNameMapping =
+        __webpack_require__.federation.bundlerRuntimeOptions.remotes
+          .idToExternalAndNameMapping ?? {};
+      const remoteModuleIds = [];
+
+      pushUnique(
+        remoteModuleIds,
+        toList(remotesLoadingData.remoteKeyToRemoteModuleIds?.[remoteKey]),
+      );
+      if (remoteModuleIds.length === 0) {
+        for (const [moduleId, data] of Object.entries(
+          remotesLoadingModuleIdToRemoteDataMapping,
+        )) {
+          if (data.remoteName === remoteKey || data.remoteName === name) {
+            remoteModuleIds.push(moduleId);
+          }
+        }
+      }
+      if (remoteModuleIds.length === 0) {
+        return Promise.reject(
+          new Error(`Cannot find remote "${name}" in remote loading data`),
+        );
+      }
+
+      const externalModuleIds = [];
+      pushUnique(
+        externalModuleIds,
+        toList(remotesLoadingData.remoteKeyToExternalModuleIds?.[remoteKey]),
+      );
+      for (const remoteModuleId of remoteModuleIds) {
+        const data = remotesLoadingModuleIdToRemoteDataMapping[remoteModuleId];
+        if (data) {
+          pushUnique(externalModuleIds, [data.externalModuleId]);
+        }
+      }
+
+      const pendingRemoteLoads = [];
+      for (const remoteModuleId of remoteModuleIds) {
+        for (const data of [
+          remotesLoadingModuleIdToRemoteDataMapping[remoteModuleId],
+          idToExternalAndNameMapping[remoteModuleId],
+        ]) {
+          if (data?.p && typeof data.p.then === 'function') {
+            pendingRemoteLoads.push(data.p.catch(() => {}));
+          }
+        }
+      }
+
+      return Promise.all(pendingRemoteLoads).then(() => {
+        const consumerModuleIds = getAffectedConsumerModuleIds(remoteModuleIds);
+        for (const remoteModuleId of remoteModuleIds) {
+          const data =
+            remotesLoadingModuleIdToRemoteDataMapping[remoteModuleId];
+          const runtimeData = idToExternalAndNameMapping[remoteModuleId];
+          if (data) delete data.p;
+          if (runtimeData) delete runtimeData.p;
+          delete __webpack_require__.m[remoteModuleId];
+        }
+        deleteModuleCache(remoteModuleIds);
+        deleteModuleCache(externalModuleIds);
+        deleteModuleCache(consumerModuleIds);
+
+        const instance = __webpack_require__.federation.instance;
+        if (instance) {
+          const remoteNames = [name, remoteKey];
+          for (const remoteInfo of toList(
+            __webpack_require__.federation.bundlerRuntimeOptions.remotes
+              .remoteInfos?.[remoteKey],
+          )) {
+            pushUnique(remoteNames, [remoteInfo.name, remoteInfo.alias]);
+          }
+          for (const remoteName of remoteNames) {
+            instance.moduleCache?.delete(remoteName);
+          }
+          const idToRemoteMap = instance.remoteHandler?.idToRemoteMap;
+          if (idToRemoteMap) {
+            for (const [id, remote] of Object.entries(idToRemoteMap)) {
+              if (
+                remoteNames.includes(remote.name) ||
+                remoteNames.some((remoteName) => id.startsWith(remoteName))
+              ) {
+                delete idToRemoteMap[id];
+              }
+            }
+          }
+        }
+
+        return {
+          name,
+          cleared: true,
+        };
+      });
+    };
 
     for (const key in __module_federation_bundler_runtime__) {
       __webpack_require__.federation[key] =
@@ -310,6 +450,12 @@ export default function () {
       __webpack_require__.federation.bundlerRuntime.init({
         webpackRequire: __webpack_require__,
       });
+    __webpack_require__.federation.clearRemoteCache = clearRemoteCache;
+    if (
+      typeof __webpack_require__.federation.instance.clearCache !== 'function'
+    ) {
+      __webpack_require__.federation.instance.clearCache = clearRemoteCache;
+    }
 
     if (__webpack_require__.consumesLoadingData?.initialConsumes) {
       __webpack_require__.federation.bundlerRuntime.installInitialConsumes({
