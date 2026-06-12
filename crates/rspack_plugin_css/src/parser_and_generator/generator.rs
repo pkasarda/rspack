@@ -715,7 +715,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     let exports_info = compilation
       .exports_info_artifact
       .get_exports_info_data(&module.identifier());
-    let mut state = CssConcatenationState::default();
+    let mut state = CssConcatenationState::new(compilation);
 
     if let Some(default_expr) = default_expr {
       self.register_concat_default_export(&default_expr, &mut state, exports_info, runtime);
@@ -960,13 +960,8 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       .source_types(module_graph)
       .contains(&SourceType::JavaScript)
     {
-      let from_css_build_info = from
-        .build_info()
-        .css
-        .as_deref()
-        .expect("CssParserAndGenerator should populate BuildInfo.css during parse");
       let resolved = state
-        .resolve_static_export(compilation, from.as_ref(), from_css_build_info, ident)
+        .resolve_static_export(from.as_ref(), ident)
         .expect("should resolve static css export");
       json_stringify_str(&resolved)
     } else {
@@ -1040,8 +1035,8 @@ if ({module_argument}.hot.data && {module_argument}.hot.data.exports && {module_
   }
 }
 
-#[derive(Default)]
 struct CssConcatenationState<'a> {
+  compilation: &'a rspack_core::Compilation,
   used_identifiers: HashSet<String>,
   seen_static_exports: HashSet<(rspack_core::ModuleIdentifier, &'a str)>,
   static_export_queue: VecDeque<StaticCssExportFrame<'a>>,
@@ -1056,19 +1051,26 @@ struct StaticCssExportFrame<'a> {
 }
 
 impl<'a> CssConcatenationState<'a> {
+  fn new(compilation: &'a rspack_core::Compilation) -> Self {
+    Self {
+      compilation,
+      used_identifiers: Default::default(),
+      seen_static_exports: Default::default(),
+      static_export_queue: Default::default(),
+    }
+  }
+
   fn resolve_static_export(
     &mut self,
-    compilation: &'a rspack_core::Compilation,
     module: &'a dyn Module,
-    css_build_info: &'a CssBuildInfo,
     export_name: &'a str,
   ) -> Option<String> {
     self.seen_static_exports.clear();
     self.static_export_queue.clear();
 
-    self.push_static_export_frame(module, css_build_info, export_name)?;
+    self.push_static_export_frame(module, export_name)?;
 
-    let module_graph = compilation.get_module_graph();
+    let module_graph = self.compilation.get_module_graph();
     while let Some(step) = self.next_static_export_step() {
       match step {
         StaticCssExportStep::Complete(resolved) => {
@@ -1082,30 +1084,25 @@ impl<'a> CssConcatenationState<'a> {
         }
         StaticCssExportStep::Resolve { module, css_export } => match css_export.from.as_deref() {
           None => {
-            let value = replace_css_module_id_placeholder(&css_export.ident, compilation, module);
+            let value =
+              replace_css_module_id_placeholder(&css_export.ident, self.compilation, module);
             if let Some(frame) = self.static_export_queue.back_mut() {
               push_joined(&mut frame.resolved, value.as_ref(), " ");
             }
           }
           Some(from_request) => {
-            let Some(target_identifier) =
-              find_static_export_target(compilation, module, from_request, css_export.id.as_ref())
-            else {
+            let Some(target_identifier) = find_static_export_target(
+              self.compilation,
+              module,
+              from_request,
+              css_export.id.as_ref(),
+            ) else {
               continue;
             };
             let Some(target_module) = module_graph.module_by_identifier(&target_identifier) else {
               continue;
             };
-            let target_css_build_info = target_module
-              .build_info()
-              .css
-              .as_deref()
-              .expect("CssParserAndGenerator should populate BuildInfo.css during parse");
-            let _ = self.push_static_export_frame(
-              target_module.as_ref(),
-              target_css_build_info,
-              &css_export.ident,
-            );
+            let _ = self.push_static_export_frame(target_module.as_ref(), &css_export.ident);
           }
         },
       }
@@ -1117,9 +1114,13 @@ impl<'a> CssConcatenationState<'a> {
   fn push_static_export_frame(
     &mut self,
     module: &'a dyn Module,
-    css_build_info: &'a CssBuildInfo,
     export_name: &'a str,
   ) -> Option<()> {
+    let css_build_info = module
+      .build_info()
+      .css
+      .as_deref()
+      .expect("CssParserAndGenerator should populate BuildInfo.css during parse");
     css_build_info.exports.get(export_name)?;
     let module_identifier = module.identifier();
     if !self
