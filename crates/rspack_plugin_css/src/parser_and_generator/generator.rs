@@ -141,7 +141,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     })
   }
 
-  fn collect_used_css_exports<'b>(&mut self) -> Option<CssExportsRef<'b>>
+  fn collect_used_css_exports<'b>(&mut self) -> CssExportsRef<'b>
   where
     'a: 'b,
     'g: 'b,
@@ -164,6 +164,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       runtime,
       exports_info_artifact,
     )
+    .unwrap_or_default()
   }
 
   pub(crate) fn generate_css_source(mut self) -> BoxSource {
@@ -215,16 +216,16 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
 
   fn generate_js_exports(&mut self) -> Result<()> {
     if self.generate_context.concatenation_scope.is_some() {
-      if let Some(exports) = self.collect_used_css_exports() {
-        self.concat_css_exports_inner(None, Some(exports))?;
-      }
+      let exports = self.collect_used_css_exports();
+      self.concat_css_exports_inner(None, exports)?;
       return Ok(());
     }
 
     let (ns_obj, left, right) = self.render_namespace_object_parts();
 
-    let exports_str = if let Some(exports) = self.collect_used_css_exports() {
-      let (decl_name, exports_string) = self.stringified_exports(exports);
+    let used_exports = self.collect_used_css_exports();
+    let exports_str = if !used_exports.is_empty() {
+      let (decl_name, exports_string) = self.stringified_exports(used_exports);
       let hmr_code = self.render_exports_hmr(decl_name);
       let module_argument = self.module_argument();
       concat_string!(
@@ -651,11 +652,10 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     let module_argument = self.module_argument().to_string();
     let (ns_obj, left, right) = self.render_namespace_object_parts();
 
-    let stringified_used_exports = self
-      .collect_used_css_exports()
-      .map(|exports| self.stringified_exports(exports));
+    let used_exports = self.collect_used_css_exports();
 
-    if let Some((decl_name, exports_string)) = stringified_used_exports {
+    if !used_exports.is_empty() {
+      let (decl_name, exports_string) = self.stringified_exports(used_exports);
       concat_string!(
         prelude,
         exports_string,
@@ -698,7 +698,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
   fn concat_css_exports_inner<'b>(
     &mut self,
     default_expr: Option<String>,
-    exports: Option<FxIndexMap<&'b str, &'b FxIndexSet<CssExport>>>,
+    exports: FxIndexMap<&'b str, &'b FxIndexSet<CssExport>>,
   ) -> Result<()> {
     if self.generate_context.concatenation_scope.is_none() {
       return Ok(());
@@ -718,10 +718,6 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
         self.register_concat_export("default", &default_expr, &used_name, &mut state);
       }
     }
-
-    let Some(exports) = exports else {
-      return Ok(());
-    };
 
     for (key, elements) in exports {
       let export_info = exports_info.get_read_only_export_info(&Atom::from(key));
