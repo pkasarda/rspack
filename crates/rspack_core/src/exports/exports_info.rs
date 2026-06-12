@@ -1,8 +1,7 @@
-use std::{collections::BTreeMap, sync::atomic::Ordering::Relaxed};
+use std::{collections::BTreeMap, hash::Hash, sync::atomic::Ordering::Relaxed};
 
 use rspack_cacheable::cacheable;
-use rspack_hash::RspackHash;
-use rspack_util::atom::Atom;
+use rspack_util::{atom::Atom, ext::DynHash};
 use rustc_hash::FxHashSet;
 use serde::Serialize;
 
@@ -106,25 +105,25 @@ impl ExportsInfoData {
   pub fn update_hash(
     &self,
     exports_info_artifact: &ExportsInfoArtifact,
-    hasher: &mut RspackHash,
+    hasher: &mut dyn std::hash::Hasher,
     runtime: Option<&RuntimeSpec>,
   ) {
     fn export_info_update_hash(
       export_info: &ExportInfoData,
       exports_info_artifact: &ExportsInfoArtifact,
-      hasher: &mut RspackHash,
+      hasher: &mut dyn std::hash::Hasher,
       runtime: Option<&RuntimeSpec>,
       visited: &mut FxHashSet<ExportsInfo>,
     ) {
       if let Some(used_name) = export_info.used_name() {
-        hasher.update(&used_name);
+        used_name.dyn_hash(hasher);
       } else {
-        hasher.update(&export_info.name());
+        export_info.name().dyn_hash(hasher);
       }
-      hasher.update(&export_info.get_used(runtime));
-      hasher.update(&export_info.provided());
-      hasher.update(&export_info.terminal_binding());
-      hasher.update(&export_info.ns_access());
+      export_info.get_used(runtime).dyn_hash(hasher);
+      export_info.provided().dyn_hash(hasher);
+      export_info.terminal_binding().dyn_hash(hasher);
+      export_info.ns_access().dyn_hash(hasher);
       if let Some(exports_info) = export_info.exports_info()
         && !visited.contains(&exports_info)
       {
@@ -141,7 +140,7 @@ impl ExportsInfoData {
     fn exports_info_update_hash(
       exports_info: &ExportsInfoData,
       exports_info_artifact: &ExportsInfoArtifact,
-      hasher: &mut RspackHash,
+      hasher: &mut dyn std::hash::Hasher,
       runtime: Option<&RuntimeSpec>,
       visited: &mut FxHashSet<ExportsInfo>,
     ) {

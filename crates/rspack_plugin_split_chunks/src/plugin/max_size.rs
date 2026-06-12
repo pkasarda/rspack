@@ -121,7 +121,11 @@ fn get_size(module: &dyn Module, compilation: &Compilation) -> SplitChunkSizes {
 
 fn hash_filename(filename: &str, options: &CompilerOptions) -> String {
   let mut filename_hash = RspackHash::from(&options.output);
-  filename_hash.update(&filename);
+  // Keep this internal deterministic-grouping hash compatible with the old
+  // `str::hash(&mut RspackHash)` behavior without making `RspackHash` a
+  // standard-library `Hasher` again.
+  filename_hash.write(filename.as_bytes());
+  filename_hash.write(&[0xff]);
   let hash_digest: RspackHashDigest = filename_hash.digest(&options.output.hash_digest);
   hash_digest.rendered(8).to_string()
 }

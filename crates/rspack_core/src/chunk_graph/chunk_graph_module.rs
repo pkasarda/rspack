@@ -1,11 +1,15 @@
 //!  There are methods whose verb is `ChunkGraphModule`
 
-use std::{fmt, hash::BuildHasherDefault};
+use std::{
+  fmt,
+  hash::{BuildHasherDefault, Hash, Hasher},
+};
 
 use rspack_cacheable::{cacheable, with::AsPreset};
 use rspack_collections::{IdentifierHasher, IdentifierSet};
-use rspack_hash::{HashFunction, RspackContentHash, RspackHash, RspackHashDigest};
-use rustc_hash::FxHashSet;
+use rspack_hash::{RspackContentHash, RspackHash, RspackHashDigest};
+use rspack_util::ext::DynHash;
+use rustc_hash::{FxHashSet, FxHasher};
 use serde::{Serialize, Serializer};
 use ustr::Ustr;
 
@@ -322,16 +326,16 @@ impl ChunkGraph {
     compilation: &Compilation,
     runtime: Option<&RuntimeSpec>,
   ) -> u64 {
-    let mut hasher = RspackHash::new(&HashFunction::Xxhash64);
+    let mut hasher = FxHasher::default();
     let strict = module.get_strict_esm_module();
     let mg = compilation.get_module_graph();
     let mg_cache = &compilation.module_graph_cache_artifact;
     let side_effects_state_artifact = &compilation
       .build_module_graph_artifact
       .side_effects_state_artifact;
-    {
-      hasher.update(&self.get_module_graph_hash_without_connections(module, compilation, runtime));
-    }
+    self
+      .get_module_graph_hash_without_connections(module, compilation, runtime)
+      .hash(&mut hasher);
 
     let mut visited_modules = IdentifierSet::default();
     visited_modules.insert(module.identifier());
@@ -366,7 +370,7 @@ impl ChunkGraph {
               side_effects_state_artifact,
               &compilation.exports_info_artifact,
             );
-            hasher.update(&active_state);
+            active_state.hash(&mut hasher);
           },
           true,
         );
@@ -379,16 +383,17 @@ impl ChunkGraph {
         .module_by_identifier(module_identifier)
         .expect("should have module")
         .as_ref();
-      let exports_type = module.get_exports_type(
-        mg,
-        &compilation.module_graph_cache_artifact,
-        &compilation.exports_info_artifact,
-        strict,
-      );
-      let module_graph_hash =
-        self.get_module_graph_hash_without_connections(module, compilation, runtime);
-      hasher.update(&exports_type);
-      hasher.update(&module_graph_hash);
+      module
+        .get_exports_type(
+          mg,
+          &compilation.module_graph_cache_artifact,
+          &compilation.exports_info_artifact,
+          strict,
+        )
+        .hash(&mut hasher);
+      self
+        .get_module_graph_hash_without_connections(module, compilation, runtime)
+        .hash(&mut hasher);
     }
 
     hasher.finish()
@@ -409,27 +414,19 @@ impl ChunkGraph {
           runtime.map(|r| get_runtime_key(r).clone()),
         ),
         || {
-          let mut hasher = RspackHash::new(&HashFunction::Xxhash64);
+          let mut hasher = FxHasher::default();
           let module_identifier = module.identifier();
 
-          {
-            hasher.update(&Self::get_module_id(
-              &compilation.module_ids_artifact,
-              module_identifier,
-            ));
-            hasher.update(&module.source_types(mg));
-            hasher.update(&ModuleGraph::is_async(
-              &compilation.async_modules_artifact,
-              &module_identifier,
-            ));
-          }
+          Self::get_module_id(&compilation.module_ids_artifact, module_identifier)
+            .dyn_hash(&mut hasher);
+          module.source_types(mg).dyn_hash(&mut hasher);
+          ModuleGraph::is_async(&compilation.async_modules_artifact, &module_identifier)
+            .dyn_hash(&mut hasher);
 
           let exports_info = compilation
             .exports_info_artifact
             .get_exports_info_data(&module_identifier);
-          {
-            exports_info.update_hash(&compilation.exports_info_artifact, &mut hasher, runtime);
-          }
+          exports_info.update_hash(&compilation.exports_info_artifact, &mut hasher, runtime);
           hasher.finish()
         },
       )

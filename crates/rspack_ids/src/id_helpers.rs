@@ -1,4 +1,9 @@
-use std::{borrow::Cow, cmp::Ordering, sync::Arc};
+use std::{
+  borrow::Cow,
+  cmp::Ordering,
+  hash::{Hash, Hasher},
+  sync::Arc,
+};
 
 use futures::future::BoxFuture;
 use itertools::{
@@ -13,13 +18,12 @@ use rspack_core::{
   SideEffectsStateArtifact, compare_runtime,
 };
 use rspack_error::Result;
-use rspack_hash::{HashFunction, RspackContentHash, RspackHash};
 use rspack_util::{
   comparators::{compare_ids, compare_numbers},
   identifier::make_paths_relative,
   number_hash::get_number_hash_combined,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 
 pub type ModuleFilterFn =
   Arc<dyn for<'a> Fn(CompilerId, &'a dyn Module) -> BoxFuture<'a, Result<bool>> + Send + Sync>;
@@ -150,9 +154,9 @@ pub fn get_full_module_name(module: &BoxModule, context: &str) -> String {
   make_paths_relative(context, &module.identifier())
 }
 
-pub fn get_hash(s: impl RspackContentHash, length: usize) -> String {
-  let mut hasher = RspackHash::new(&HashFunction::Xxhash64);
-  hasher.update(&s);
+pub fn get_hash(s: impl Hash, length: usize) -> String {
+  let mut hasher = FxHasher::default();
+  s.hash(&mut hasher);
   let hash = hasher.finish();
   let mut hash_str = format!("{hash:x}");
   if hash_str.len() > length {

@@ -1,7 +1,6 @@
 use std::{
   borrow::Cow,
   env,
-  hash::Hasher,
   path::{Path, PathBuf},
 };
 

@@ -179,6 +179,11 @@ fn module_external_fragment_key(base: &str, attributes: &Option<ImportAttributes
   }
 }
 
+fn update_string_hash_compat(hasher: &mut RspackHash, value: &str) {
+  hasher.write(value.as_bytes());
+  hasher.write(&[0xff]);
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ModuleExternalRemapping {
   exposed_name: String,
@@ -668,9 +673,12 @@ impl ExternalModule {
             || self.dependency_meta.attributes.is_some()
           {
             let mut hasher = RspackHash::from(&compilation.options.output);
-            hasher.update(&request.primary);
+            update_string_hash_compat(&mut hasher, &request.primary);
             if let Some(attributes) = &self.dependency_meta.attributes {
-              hasher.update(&simd_json::to_string(attributes).expect("json stringify failed"));
+              update_string_hash_compat(
+                &mut hasher,
+                &simd_json::to_string(attributes).expect("json stringify failed"),
+              );
             }
             let hash_suffix = hasher.digest(&compilation.options.output.hash_digest);
             Cow::Owned(format!(
