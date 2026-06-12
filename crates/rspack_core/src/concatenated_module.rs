@@ -2339,6 +2339,14 @@ impl ConcatenatedModule {
         ConcatenationEntryConcatenated { module: *module },
       ));
     } else {
+      if matches!(
+        mg.dependency_by_id(&import.connection.dependency_id)
+          .dependency_type(),
+        DependencyType::CssImport
+      ) {
+        return;
+      }
+
       let reduced_runtime_condition;
       let reduced_non_defer_access;
       if let Some(existing) = exists_entry.get_mut(module) {
@@ -2431,10 +2439,10 @@ impl ConcatenatedModule {
         .module_by_identifier(connection.module_identifier())
         .expect("should have module");
 
-      if ref_module
-        .source_types(mg)
-        .iter()
-        .all(|source_type| source_type == &SourceType::Css)
+      let ref_source_types = ref_module.source_types(mg);
+      if !ref_source_types.contains(&SourceType::JavaScript)
+        && (ref_source_types.contains(&SourceType::Css)
+          || ref_source_types.contains(&SourceType::CssImport))
       {
         return None;
       }
@@ -3328,6 +3336,7 @@ pub fn is_esm_dep_like(dep: &BoxDependency) -> bool {
       | DependencyType::EsmExportImportedSpecifier
       | DependencyType::EsmImport
       | DependencyType::EsmExportImport
+      | DependencyType::CssImport
   )
 }
 

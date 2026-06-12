@@ -10,9 +10,13 @@ import icssText, { button as icssTextButton } from "./icss-text.modules.css";
 import icssStylesheet, { "sheet-button" as icssStylesheetButton } from "./icss-stylesheet.modules.css";
 import fooStylesheet from "./foo.css" with { type: "css" };
 
+const path = __non_webpack_require__("path");
+
 it("should export CSS text as default when exportType is text (css/module)", () => {
   expect(typeof moduleText).toBe("string");
-  expect(moduleText).toMatchSnapshot();
+  expect(moduleText).toMatchFileSnapshotSync(
+    path.join(__SNAPSHOT__, `module-text.${__STATS_I__}.txt`)
+  );
 
   expect(moduleTextClass).toBeTruthy();
 });
@@ -29,7 +33,9 @@ it("should export CSS text when exportType is text and esModule is false (css/mo
   // Named export, warn
   expect(moduleTextNoEsm["no-esm-text"]).toBeTruthy();
   expect(moduleTextNoEsm.default["no-esm-text"]).toBeTruthy();
-  expect(moduleTextNoEsm).toMatchSnapshot();
+  expect(moduleTextNoEsm).toMatchFileSnapshotSync(
+    path.join(__SNAPSHOT__, `module-text-no-esm.${__STATS_I__}.txt`)
+  );
 });
 
 
@@ -42,7 +48,9 @@ it("should export CSS text when exportType is text and esModule is false (css/au
 it("should handle @import with layer, supports, and media queries", () => {
   expect(typeof moduleWithImports).toBe("string");
   expect(typeof parentModuleWithImports).toBe("string");
-  expect(parentModuleWithImports).toMatchSnapshot();
+  expect(parentModuleWithImports).toMatchFileSnapshotSync(
+    path.join(__SNAPSHOT__, `parent-module-with-imports.${__STATS_I__}.txt`)
+  );
 });
 
 it("should handle ICSS :import with exportType text", () => {

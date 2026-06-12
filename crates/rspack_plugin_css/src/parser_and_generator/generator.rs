@@ -712,6 +712,14 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       .get_exports_info_data(&module.identifier());
     let mut state = CssConcatenationState::new(compilation);
 
+    if self.es_module {
+      let esm_flag = self
+        .generate_context
+        .runtime_template
+        .define_es_module_flag_statement(self.module.get_exports_argument());
+      self.concat_source.add(RawStringSource::from(esm_flag));
+    }
+
     if let Some(default_expr) = default_expr {
       let export_info = exports_info.get_read_only_export_info(&Atom::from("default"));
       if let Some(UsedNameItem::Str(used_name)) = export_info.get_used_name(None, runtime) {
