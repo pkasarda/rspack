@@ -6,13 +6,21 @@ use std::{
 };
 
 use rspack_cacheable::{
+  __private::rkyv::{
+    Archive, Archived, Deserialize, Place, Serialize,
+    munge::munge,
+    option::ArchivedOption,
+    rancor::Fallible,
+    tuple::ArchivedTuple5,
+    with::{ArchiveWith, DeserializeWith, SerializeWith},
+  },
   cacheable, cacheable_dyn,
-  with::{As, AsConverter},
+  with::{AsInner, AsOption, Inline},
 };
 use rustc_hash::FxHasher;
 
 use crate::{
-  BoxSource, MapOptions, RawBufferSource, Source, SourceExt, SourceMap,
+  BoxSource, MapOptions, RawBufferSource, Source, SourceExt, SourceMap, SourceMapAsJson,
   helpers::{
     Chunks, GeneratedInfo, StreamChunks, TextSpan, stream_and_get_source_and_map,
     stream_chunks_of_raw_source, stream_chunks_of_source_map,
@@ -64,36 +72,132 @@ struct CachedData {
 ///   "Hello World\nconsole.log('test');\nconsole.log('test2');\nHello2\n"
 /// );
 /// ```
-#[cacheable(with=As::<CachedSourceSerde>)]
+#[cacheable]
 pub struct CachedSource {
   inner: BoxSource,
+  #[cacheable(with=AsInner<CachedDataAsCache>)]
   cache: Arc<CachedData>,
 }
 
-#[cacheable]
 #[doc(hidden)]
-pub struct CachedSourceSerde {
-  inner: BoxSource,
+pub struct CachedDataAsCache;
+
+type CachedDataMapRef<'a> = Option<&'a Option<SourceMap>>;
+type CachedDataMapAsRef = AsOption<Inline<AsOption<SourceMapAsJson>>>;
+type CachedDataMapAsOwned = AsOption<AsOption<SourceMapAsJson>>;
+type ArchivedCachedDataMap =
+  ArchivedOption<ArchivedOption<<SourceMapAsJson as ArchiveWith<SourceMap>>::Archived>>;
+type CachedDataMapResolver = Option<Option<<SourceMapAsJson as ArchiveWith<SourceMap>>::Resolver>>;
+
+#[doc(hidden)]
+pub type ArchivedCachedData = ArchivedTuple5<
+  Archived<Option<u64>>,
+  Archived<Option<usize>>,
+  Archived<Option<bool>>,
+  ArchivedCachedDataMap,
+  ArchivedCachedDataMap,
+>;
+
+#[doc(hidden)]
+pub struct CachedDataAsCacheResolver {
+  hash: <Option<u64> as Archive>::Resolver,
+  size: <Option<usize> as Archive>::Resolver,
+  is_ascii: <Option<bool> as Archive>::Resolver,
+  columns_map: CachedDataMapResolver,
+  line_only_map: CachedDataMapResolver,
 }
 
-#[doc(hidden)]
-pub type ArchivedCachedSource = ArchivedCachedSourceSerde;
+impl ArchiveWith<CachedData> for CachedDataAsCache {
+  type Archived = ArchivedCachedData;
+  type Resolver = CachedDataAsCacheResolver;
 
-impl AsConverter<CachedSource> for CachedSourceSerde {
-  fn serialize(
-    data: &CachedSource,
-    _guard: &rspack_cacheable::ContextGuard,
-  ) -> rspack_cacheable::Result<Self> {
-    Ok(Self {
-      inner: data.inner.clone(),
+  #[inline]
+  fn resolve_with(field: &CachedData, resolver: Self::Resolver, out: Place<Self::Archived>) {
+    let hash = field.hash.get().copied();
+    let size = field.size.get().copied();
+    let is_ascii = field.is_ascii.get().copied();
+    let columns_map = field.columns_map.get();
+    let line_only_map = field.line_only_map.get();
+
+    munge!(
+      let ArchivedTuple5(
+        out_hash,
+        out_size,
+        out_is_ascii,
+        out_columns_map,
+        out_line_only_map
+      ) = out
+    );
+    hash.resolve(resolver.hash, out_hash);
+    size.resolve(resolver.size, out_size);
+    is_ascii.resolve(resolver.is_ascii, out_is_ascii);
+    CachedDataMapAsRef::resolve_with(&columns_map, resolver.columns_map, out_columns_map);
+    CachedDataMapAsRef::resolve_with(&line_only_map, resolver.line_only_map, out_line_only_map);
+  }
+}
+
+impl<S> SerializeWith<CachedData, S> for CachedDataAsCache
+where
+  S: Fallible<Error = rspack_cacheable::Error> + ?Sized,
+  Option<u64>: Serialize<S>,
+  Option<usize>: Serialize<S>,
+  Option<bool>: Serialize<S>,
+  for<'a> CachedDataMapAsRef: ArchiveWith<CachedDataMapRef<'a>, Resolver = CachedDataMapResolver>
+    + SerializeWith<CachedDataMapRef<'a>, S>,
+{
+  #[inline]
+  fn serialize_with(
+    field: &CachedData,
+    serializer: &mut S,
+  ) -> rspack_cacheable::Result<Self::Resolver> {
+    let hash = field.hash.get().copied();
+    let size = field.size.get().copied();
+    let is_ascii = field.is_ascii.get().copied();
+    let columns_map = field.columns_map.get();
+    let line_only_map = field.line_only_map.get();
+
+    Ok(CachedDataAsCacheResolver {
+      hash: hash.serialize(serializer)?,
+      size: size.serialize(serializer)?,
+      is_ascii: is_ascii.serialize(serializer)?,
+      columns_map: CachedDataMapAsRef::serialize_with(&columns_map, serializer)?,
+      line_only_map: CachedDataMapAsRef::serialize_with(&line_only_map, serializer)?,
     })
   }
+}
 
-  fn deserialize(
-    self,
-    _guard: &rspack_cacheable::ContextGuard,
-  ) -> rspack_cacheable::Result<CachedSource> {
-    Ok(CachedSource::new(self.inner))
+impl<D> DeserializeWith<ArchivedCachedData, CachedData, D> for CachedDataAsCache
+where
+  D: Fallible<Error = rspack_cacheable::Error> + ?Sized,
+  Archived<Option<u64>>: Deserialize<Option<u64>, D>,
+  Archived<Option<usize>>: Deserialize<Option<usize>, D>,
+  Archived<Option<bool>>: Deserialize<Option<bool>, D>,
+  CachedDataMapAsOwned: DeserializeWith<ArchivedCachedDataMap, Option<Option<SourceMap>>, D>,
+{
+  #[inline]
+  fn deserialize_with(
+    field: &ArchivedCachedData,
+    deserializer: &mut D,
+  ) -> rspack_cacheable::Result<CachedData> {
+    let cache = CachedData::default();
+
+    if let Some(hash) = field.0.deserialize(deserializer)? {
+      let _ = cache.hash.set(hash);
+    }
+    if let Some(size) = field.1.deserialize(deserializer)? {
+      let _ = cache.size.set(size);
+    }
+    if let Some(is_ascii) = field.2.deserialize(deserializer)? {
+      let _ = cache.is_ascii.set(is_ascii);
+    }
+    if let Some(columns_map) = CachedDataMapAsOwned::deserialize_with(&field.3, deserializer)? {
+      let _ = cache.columns_map.set(columns_map);
+    }
+    if let Some(line_only_map) = CachedDataMapAsOwned::deserialize_with(&field.4, deserializer)? {
+      let _ = cache.line_only_map.set(line_only_map);
+    }
+
+    Ok(cache)
   }
 }
 
@@ -389,6 +493,49 @@ mod tests {
       *clone.cache.columns_map.get().unwrap(),
       source.map(&ObjectPool::default(), &map_options)
     );
+  }
+
+  #[test]
+  fn should_preserve_cached_data_when_cacheable_roundtrip() {
+    #[rspack_cacheable::cacheable]
+    struct Data(#[cacheable(with=rspack_cacheable::with::AsPreset)] BoxSource);
+
+    let source = CachedSource::new(OriginalSource::new("const answer = 42;\n", "answer.js"));
+    let object_pool = ObjectPool::default();
+    let columns_options = MapOptions::new(true);
+    let line_only_options = MapOptions::new(false);
+
+    source.source();
+    let expected_size = source.size();
+    let expected_is_ascii = source.cache.is_ascii.get().copied();
+    let mut hasher = FxHasher::default();
+    source.hash(&mut hasher);
+    let expected_hash = source.cache.hash.get().copied();
+    let expected_columns_map = source.map(&object_pool, &columns_options);
+    let expected_line_only_map = source.map(&object_pool, &line_only_options);
+
+    assert!(source.cache.chunks.get().is_some());
+
+    let bytes = rspack_cacheable::to_bytes(&Data(source.boxed()), &()).unwrap();
+    let Data(restored) = rspack_cacheable::from_bytes(&bytes, &()).unwrap();
+    let restored = restored
+      .as_ref()
+      .as_any()
+      .downcast_ref::<CachedSource>()
+      .unwrap();
+
+    assert_eq!(restored.cache.size.get().copied(), Some(expected_size));
+    assert_eq!(restored.cache.is_ascii.get().copied(), expected_is_ascii);
+    assert_eq!(restored.cache.hash.get().copied(), expected_hash);
+    assert_eq!(
+      restored.cache.columns_map.get(),
+      Some(&expected_columns_map)
+    );
+    assert_eq!(
+      restored.cache.line_only_map.get(),
+      Some(&expected_line_only_map)
+    );
+    assert!(restored.cache.chunks.get().is_none());
   }
 
   #[test]
