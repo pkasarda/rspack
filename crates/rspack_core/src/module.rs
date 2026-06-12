@@ -238,6 +238,10 @@ impl CssBuildInfo {
   pub fn render_conditions(&self) -> impl Iterator<Item = &CssModuleRenderCondition> {
     iter_css_module_render_conditions(&self.inherited_render_conditions, &self.render_condition)
   }
+
+  pub fn has_render_conditions(&self) -> bool {
+    self.render_conditions().next().is_some()
+  }
 }
 
 #[cacheable]

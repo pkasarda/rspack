@@ -515,7 +515,7 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     let (require, require_left, require_right) = self.render_require_call_parts();
     let mut code = String::new();
 
-    let has_render_condition = self.css_build_info.render_conditions().next().is_none();
+    let has_render_condition = !self.css_build_info.has_render_conditions();
 
     for css_import in self.css_import_modules() {
       let Some(module_id) = ChunkGraph::get_module_id(
@@ -536,13 +536,23 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       ) && has_render_condition
         && css_import.render_conditions.is_empty()
       {
-        code.push_str(&concat_string!(
-          require,
-          require_left,
-          json_stringify(module_id),
-          require_right,
-          ";\n"
-        ));
+        let is_concatenated_import = self
+          .generate_context
+          .concatenation_scope
+          .as_ref()
+          .is_some_and(|scope| {
+            scope.is_module_in_scope(&css_import.module_identifier)
+              && scope.is_module_concatenated(&css_import.module_identifier)
+          });
+        if !is_concatenated_import {
+          code.push_str(&concat_string!(
+            require,
+            require_left,
+            json_stringify(module_id),
+            require_right,
+            ";\n"
+          ));
+        }
         continue;
       }
 
@@ -667,12 +677,12 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       concat_string!(
         prelude,
         ns_obj,
-        "(",
+        left,
         module_argument,
-        ".exports = {});\n",
-        module_argument,
-        ".exports.default = ",
+        ".exports = {\n\t\"default\": ",
         default_expr,
+        "\n}",
+        right,
         ";\n"
       )
     } else {

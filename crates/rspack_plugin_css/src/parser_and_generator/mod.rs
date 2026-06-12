@@ -320,11 +320,15 @@ impl ParserAndGenerator for CssParserAndGenerator {
   ) -> Option<Cow<'static, str>> {
     if !self.es_module {
       Some("Module Concatenation is not implemented for CommonJS css exports".into())
-    } else if self.exports_only
-      || self
-        .effective_export_type(module)
-        .is_some_and(|export_type| export_type != CssExportType::Link)
+    } else if self.effective_export_type(module) == Some(CssExportType::Style)
+      && module
+        .build_info()
+        .css
+        .as_deref()
+        .is_some_and(|css_build_info| css_build_info.has_render_conditions())
     {
+      Some("Module Concatenation is not implemented for conditional css style exports".into())
+    } else if self.exports_only || self.effective_export_type(module).is_some() {
       None
     } else {
       // CSS Module cannot be concatenated as it must appear in css chunk, if it's
