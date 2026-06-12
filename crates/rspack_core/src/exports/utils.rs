@@ -137,12 +137,7 @@ pub struct InlinedUsedName {
   suffix: Vec<Atom>,
 }
 
-impl RspackContentHash for InlinedUsedName {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.value.rspack_content_hash(state);
-    self.suffix.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(InlinedUsedName, value, suffix,);
 
 impl InlinedUsedName {
   pub fn new(value: EvaluatedInlinableValue) -> Self {

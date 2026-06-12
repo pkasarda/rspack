@@ -472,12 +472,15 @@ impl RspackContentHash for ExportsArgument {
 
 impl RspackContentHash for BuildMeta {
   fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.strict_esm_module.rspack_content_hash(state);
-    self.has_top_level_await.rspack_content_hash(state);
-    self.esm.rspack_content_hash(state);
-    self.exports_type.rspack_content_hash(state);
-    self.default_object.rspack_content_hash(state);
-    self.side_effect_free.rspack_content_hash(state);
+    rspack_hash::rspack_content_hash_update!(
+      state,
+      self.strict_esm_module,
+      self.has_top_level_await,
+      self.esm,
+      self.exports_type,
+      self.default_object,
+      self.side_effect_free,
+    );
   }
 }
 

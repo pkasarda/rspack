@@ -385,16 +385,15 @@ impl NormalInitFragment {
   }
 }
 
-impl RspackContentHash for NormalInitFragment {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.content.rspack_content_hash(state);
-    self.stage.rspack_content_hash(state);
-    self.position.rspack_content_hash(state);
-    self.key.rspack_content_hash(state);
-    self.end_content.rspack_content_hash(state);
-    self.top_level_decl_symbols.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  NormalInitFragment,
+  content,
+  stage,
+  position,
+  key,
+  end_content,
+  top_level_decl_symbols,
+);
 
 impl<C> InitFragment<C> for NormalInitFragment {
   fn contents(self: Box<Self>, _context: &mut C) -> Result<InitFragmentContents> {
@@ -464,13 +463,12 @@ impl ESMExportInitFragment {
   }
 }
 
-impl RspackContentHash for ESMExportInitFragment {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.exports_argument.rspack_content_hash(state);
-    self.export_map.rspack_content_hash(state);
-    self.is_circular_module.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  ESMExportInitFragment,
+  exports_argument,
+  export_map,
+  is_circular_module,
+);
 
 impl<C: InitFragmentRenderContext> InitFragment<C> for ESMExportInitFragment {
   fn contents(mut self: Box<Self>, context: &mut C) -> Result<InitFragmentContents> {
@@ -688,16 +686,15 @@ impl ConditionalInitFragment {
   }
 }
 
-impl RspackContentHash for ConditionalInitFragment {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.content.rspack_content_hash(state);
-    self.stage.rspack_content_hash(state);
-    self.position.rspack_content_hash(state);
-    self.key.rspack_content_hash(state);
-    self.end_content.rspack_content_hash(state);
-    self.runtime_condition.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  ConditionalInitFragment,
+  content,
+  stage,
+  position,
+  key,
+  end_content,
+  runtime_condition,
+);
 
 impl<C: InitFragmentRenderContext> InitFragment<C> for ConditionalInitFragment {
   fn contents(self: Box<Self>, context: &mut C) -> Result<InitFragmentContents> {
@@ -823,16 +820,15 @@ impl ExternalModuleInitFragment {
   }
 }
 
-impl RspackContentHash for ExternalModuleInitFragment {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.imported_module.rspack_content_hash(state);
-    self.import_specifiers.rspack_content_hash(state);
-    self.default_import.rspack_content_hash(state);
-    self.stage.rspack_content_hash(state);
-    self.position.rspack_content_hash(state);
-    self.key.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  ExternalModuleInitFragment,
+  imported_module,
+  import_specifiers,
+  default_import,
+  stage,
+  position,
+  key,
+);
 
 impl<C: InitFragmentRenderContext> InitFragment<C> for ExternalModuleInitFragment {
   fn contents(self: Box<Self>, _context: &mut C) -> Result<InitFragmentContents> {

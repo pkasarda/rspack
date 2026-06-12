@@ -21,11 +21,7 @@ pub struct RuntimeSpec {
   key: String,
 }
 
-impl RspackContentHash for RuntimeSpec {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.key.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(RuntimeSpec, key,);
 
 impl std::fmt::Display for RuntimeSpec {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

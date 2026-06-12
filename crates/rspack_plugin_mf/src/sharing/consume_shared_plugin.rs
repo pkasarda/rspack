@@ -38,20 +38,19 @@ pub struct ConsumeOptions {
   pub tree_shaking_mode: Option<String>,
 }
 
-impl RspackContentHash for ConsumeOptions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.import.rspack_content_hash(state);
-    self.import_resolved.rspack_content_hash(state);
-    self.share_key.rspack_content_hash(state);
-    self.share_scope.rspack_content_hash(state);
-    self.required_version.rspack_content_hash(state);
-    self.package_name.rspack_content_hash(state);
-    self.strict_version.rspack_content_hash(state);
-    self.singleton.rspack_content_hash(state);
-    self.eager.rspack_content_hash(state);
-    self.tree_shaking_mode.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  ConsumeOptions,
+  import,
+  import_resolved,
+  share_key,
+  share_scope,
+  required_version,
+  package_name,
+  strict_version,
+  singleton,
+  eager,
+  tree_shaking_mode,
+);
 
 #[cacheable]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

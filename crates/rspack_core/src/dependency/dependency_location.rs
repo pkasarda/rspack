@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use rspack_cacheable::cacheable;
-use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_util::SpanExt;
 
 /// Represents a range in a dependency, typically used for tracking the span of code in a source file.
@@ -46,9 +45,4 @@ impl DependencyRange {
   }
 }
 
-impl RspackContentHash for DependencyRange {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.start.rspack_content_hash(state);
-    self.end.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(DependencyRange, start, end,);

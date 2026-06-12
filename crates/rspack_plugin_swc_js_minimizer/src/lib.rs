@@ -30,7 +30,7 @@ use rspack_util::{
   asset_condition::AssetConditions,
   fx_hash::{FxHashMap, FxHasher},
 };
-use swc_config::types::BoolOrDataConfig;
+use swc_config::types::{BoolOr, BoolOrDataConfig};
 use swc_core::{
   base::config::JsMinifyFormatOptions,
   common::comments::{CommentKind, SingleThreadedComments},
@@ -105,24 +105,42 @@ impl RspackContentHash for MinimizerOptions {
       .__format_cache
       .get_or_init(|| simd_json::to_string(&self.format).expect("Should be able to serialize"))
       .rspack_content_hash(state);
-    let compress_cache = self.__compress_cache.get_or_init(|| {
-      self
-        .compress
-        .as_ref()
-        .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
-    });
-    simd_json::to_string(compress_cache)
-      .expect("Should be able to serialize")
-      .rspack_content_hash(state);
-    let mangle_cache = self.__mangle_cache.get_or_init(|| {
-      self
-        .mangle
-        .as_ref()
-        .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
-    });
-    simd_json::to_string(mangle_cache)
-      .expect("Should be able to serialize")
-      .rspack_content_hash(state);
+    rspack_content_hash_bool_or_data_config(
+      state,
+      self.__compress_cache.get_or_init(|| {
+        self
+          .compress
+          .as_ref()
+          .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
+      }),
+    );
+    rspack_content_hash_bool_or_data_config(
+      state,
+      self.__mangle_cache.get_or_init(|| {
+        self
+          .mangle
+          .as_ref()
+          .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
+      }),
+    );
+  }
+}
+
+fn rspack_content_hash_bool_or_data_config<T: RspackContentHash>(
+  state: &mut RspackHash,
+  value: &BoolOrDataConfig<T>,
+) {
+  if let Some(value) = value.inner() {
+    match value {
+      BoolOr::Bool(value) => {
+        "bool".rspack_content_hash(state);
+        value.rspack_content_hash(state);
+      }
+      BoolOr::Data(value) => {
+        "data".rspack_content_hash(state);
+        value.rspack_content_hash(state);
+      }
+    }
   }
 }
 
@@ -161,23 +179,16 @@ impl Hash for ExtractComments {
   }
 }
 
-impl RspackContentHash for ExtractComments {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.condition.as_str().rspack_content_hash(state);
-    self.condition_flags.as_str().rspack_content_hash(state);
-    self.banner.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(ExtractComments, condition, condition_flags, banner,);
 
-impl RspackContentHash for PluginOptions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.test.rspack_content_hash(state);
-    self.include.rspack_content_hash(state);
-    self.exclude.rspack_content_hash(state);
-    self.extract_comments.rspack_content_hash(state);
-    self.minimizer_options.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  PluginOptions,
+  test,
+  include,
+  exclude,
+  extract_comments,
+  minimizer_options,
+);
 
 #[derive(Debug)]
 struct NormalizedExtractComments {

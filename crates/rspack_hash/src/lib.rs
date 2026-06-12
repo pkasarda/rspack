@@ -126,6 +126,26 @@ pub trait RspackContentHash {
   fn rspack_content_hash(&self, state: &mut RspackHash);
 }
 
+#[macro_export]
+macro_rules! rspack_content_hash_update {
+  ($state:expr, $($value:expr),+ $(,)?) => {
+    $(
+      $state.update(&$value);
+    )+
+  };
+}
+
+#[macro_export]
+macro_rules! impl_rspack_content_hash {
+  ($ty:ty, $($field:ident),+ $(,)?) => {
+    impl $crate::RspackContentHash for $ty {
+      fn rspack_content_hash(&self, state: &mut $crate::RspackHash) {
+        $crate::rspack_content_hash_update!(state, $(self.$field),+);
+      }
+    }
+  };
+}
+
 impl<T: RspackContentHash + ?Sized> RspackContentHash for &T {
   fn rspack_content_hash(&self, state: &mut RspackHash) {
     (*self).rspack_content_hash(state);
@@ -433,11 +453,7 @@ impl Hash for RspackHashDigest {
   }
 }
 
-impl RspackContentHash for RspackHashDigest {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.encoded.rspack_content_hash(state);
-  }
-}
+impl_rspack_content_hash!(RspackHashDigest, encoded,);
 
 impl PartialEq for RspackHashDigest {
   fn eq(&self, other: &Self) -> bool {

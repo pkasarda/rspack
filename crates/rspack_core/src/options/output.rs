@@ -527,16 +527,15 @@ pub struct LibraryOptions {
   pub amd_container: Option<String>,
 }
 
-impl RspackContentHash for LibraryOptions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.name.rspack_content_hash(state);
-    self.export.rspack_content_hash(state);
-    self.library_type.rspack_content_hash(state);
-    self.umd_named_define.rspack_content_hash(state);
-    self.auxiliary_comment.rspack_content_hash(state);
-    self.amd_container.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  LibraryOptions,
+  name,
+  export,
+  library_type,
+  umd_named_define,
+  auxiliary_comment,
+  amd_container,
+);
 
 pub type LibraryType = String;
 
@@ -551,14 +550,7 @@ pub struct LibraryAuxiliaryComment {
   pub amd: Option<String>,
 }
 
-impl RspackContentHash for LibraryAuxiliaryComment {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.root.rspack_content_hash(state);
-    self.commonjs.rspack_content_hash(state);
-    self.commonjs2.rspack_content_hash(state);
-    self.amd.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(LibraryAuxiliaryComment, root, commonjs, commonjs2, amd,);
 
 #[cacheable]
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -600,13 +592,7 @@ pub struct LibraryCustomUmdObject {
   pub root: Option<Vec<String>>,
 }
 
-impl RspackContentHash for LibraryCustomUmdObject {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.amd.rspack_content_hash(state);
-    self.commonjs.rspack_content_hash(state);
-    self.root.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(LibraryCustomUmdObject, amd, commonjs, root,);
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Environment {

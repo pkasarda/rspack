@@ -830,8 +830,12 @@ pub struct AssetGeneratorDataUrlOptions {
 
 impl RspackContentHash for AssetGeneratorDataUrlOptions {
   fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.encoding.rspack_content_hash(state);
-    self.mimetype.rspack_content_hash(state);
+    if let Some(encoding) = &self.encoding
+      && !matches!(encoding, DataUrlEncoding::Base64)
+    {
+      state.update(encoding);
+    }
+    state.update(&self.mimetype);
   }
 }
 

@@ -43,22 +43,14 @@ pub struct Draft {
   pub custom_media: bool,
 }
 
-impl RspackContentHash for Draft {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.custom_media.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(Draft, custom_media,);
 
 #[derive(Debug, Hash)]
 pub struct NonStandard {
   pub deep_selector_combinator: bool,
 }
 
-impl RspackContentHash for NonStandard {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.deep_selector_combinator.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(NonStandard, deep_selector_combinator,);
 
 #[derive(Debug, Hash)]
 pub struct PseudoClasses {
@@ -69,15 +61,14 @@ pub struct PseudoClasses {
   pub focus_within: Option<String>,
 }
 
-impl RspackContentHash for PseudoClasses {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.hover.rspack_content_hash(state);
-    self.active.rspack_content_hash(state);
-    self.focus.rspack_content_hash(state);
-    self.focus_visible.rspack_content_hash(state);
-    self.focus_within.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  PseudoClasses,
+  hover,
+  active,
+  focus,
+  focus_visible,
+  focus_within,
+);
 
 #[derive(Debug)]
 pub struct MinimizerOptions {
@@ -143,15 +134,14 @@ impl RspackContentHash for MinimizerOptions {
   }
 }
 
-impl RspackContentHash for PluginOptions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.test.rspack_content_hash(state);
-    self.include.rspack_content_hash(state);
-    self.exclude.rspack_content_hash(state);
-    self.remove_unused_local_idents.rspack_content_hash(state);
-    self.minimizer_options.rspack_content_hash(state);
-  }
-}
+rspack_hash::impl_rspack_content_hash!(
+  PluginOptions,
+  test,
+  include,
+  exclude,
+  remove_unused_local_idents,
+  minimizer_options,
+);
 
 #[plugin]
 #[derive(Debug)]
