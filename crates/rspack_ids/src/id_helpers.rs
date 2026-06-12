@@ -28,8 +28,9 @@ use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 pub type ModuleFilterFn =
   Arc<dyn for<'a> Fn(CompilerId, &'a dyn Module) -> BoxFuture<'a, Result<bool>> + Send + Sync>;
 
-fn should_assign_module_id_without_chunk(module: &dyn Module) -> bool {
-  module.build_meta().is_css_module || module.build_meta().need_id_in_concatenation
+pub(crate) fn should_assign_module_id_without_chunk(module: &dyn Module) -> bool {
+  let build_meta = module.build_meta();
+  build_meta.is_css_module || build_meta.need_id_in_concatenation
 }
 
 #[allow(clippy::type_complexity)]

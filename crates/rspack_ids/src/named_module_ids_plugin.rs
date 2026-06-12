@@ -10,7 +10,9 @@ use rspack_error::{Diagnostic, Result};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_util::{comparators::compare_ids, itoa};
 
-use crate::id_helpers::{get_long_module_name, get_short_module_name};
+use crate::id_helpers::{
+  get_long_module_name, get_short_module_name, should_assign_module_id_without_chunk,
+};
 
 fn add_conflicted_module_name(
   name_to_item: &mut ModuleIdMap<ModuleIdentifier>,
@@ -238,8 +240,7 @@ async fn module_ids(
           .chunk_graph
           .get_number_of_module_chunks(*module_identifier)
           != 0
-          || module.build_meta().is_css_module
-          || module.build_meta().need_id_in_concatenation)
+          || should_assign_module_id_without_chunk(module))
     })
     .map(|(m, _)| *m)
     .collect();
