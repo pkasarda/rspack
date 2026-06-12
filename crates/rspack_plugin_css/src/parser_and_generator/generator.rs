@@ -224,7 +224,22 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     let (ns_obj, left, right) = self.render_namespace_object_parts();
 
     let exports_str = if let Some(exports) = self.collect_used_css_exports() {
-      self.css_modules_exports_to_string(exports, &ns_obj, left, right)
+      let (decl_name, exports_string) = self.stringified_exports(exports);
+      let hmr_code = self.render_exports_hmr(decl_name);
+      let module_argument = self.module_argument();
+      concat_string!(
+        exports_string,
+        "\n",
+        hmr_code,
+        "\n",
+        ns_obj,
+        left,
+        module_argument,
+        ".exports = ",
+        decl_name,
+        right,
+        ";\n"
+      )
     } else {
       let hmr_code = self.render_accept_hmr();
       let module_argument = self.module_argument();
@@ -241,32 +256,6 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
 
     self.concat_source.add(RawStringSource::from(exports_str));
     Ok(())
-  }
-
-  fn css_modules_exports_to_string<'b>(
-    &mut self,
-    exports: rspack_util::fx_hash::FxIndexMap<&'b str, &'b FxIndexSet<CssExport>>,
-    ns_obj: &str,
-    left: &str,
-    right: &str,
-  ) -> String {
-    let (decl_name, exports_string) = self.stringified_exports(exports);
-    let hmr_code = self.render_exports_hmr(decl_name);
-    let module_argument = self.module_argument();
-
-    concat_string!(
-      exports_string,
-      "\n",
-      hmr_code,
-      "\n",
-      ns_obj,
-      left,
-      module_argument,
-      ".exports = ",
-      decl_name,
-      right,
-      ";\n"
-    )
   }
 
   fn child_generator<'b>(
@@ -619,7 +608,16 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
   }
 
   fn generate_css_style_sheet_exports(&mut self, css: &str) -> Result<String> {
-    let css_style_sheet_expr = self.render_css_style_sheet_expression(css);
+    self
+      .generate_context
+      .runtime_template
+      .runtime_requirements_mut()
+      .insert(RuntimeGlobals::CSS_STYLE_SHEET);
+    let css_style_sheet = self
+      .generate_context
+      .runtime_template
+      .render_runtime_globals(&RuntimeGlobals::CSS_STYLE_SHEET);
+    let css_style_sheet_expr = concat_string!(css_style_sheet, "(", css, ")");
     if self.generate_context.concatenation_scope.is_some() {
       self.concat_css_exports_with_default(Some(css_style_sheet_expr))?;
       return Ok(String::new());
@@ -682,19 +680,6 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     }
   }
 
-  fn render_css_style_sheet_expression(&mut self, css: &str) -> String {
-    self
-      .generate_context
-      .runtime_template
-      .runtime_requirements_mut()
-      .insert(RuntimeGlobals::CSS_STYLE_SHEET);
-    let css_style_sheet = self
-      .generate_context
-      .runtime_template
-      .render_runtime_globals(&RuntimeGlobals::CSS_STYLE_SHEET);
-    concat_string!(css_style_sheet, "(", css, ")")
-  }
-
   fn concat_css_exports_with_default(&mut self, default_expr: Option<String>) -> Result<()> {
     let exports = self.collect_used_css_exports();
     self.concat_css_exports_inner(default_expr, exports)
@@ -718,7 +703,10 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     let mut state = CssConcatenationState::new(compilation);
 
     if let Some(default_expr) = default_expr {
-      self.register_concat_default_export(&default_expr, &mut state, exports_info, runtime);
+      let export_info = exports_info.get_read_only_export_info(&Atom::from("default"));
+      if let Some(UsedNameItem::Str(used_name)) = export_info.get_used_name(None, runtime) {
+        self.register_concat_export("default", &default_expr, &used_name, &mut state);
+      }
     }
 
     let Some(exports) = exports else {
@@ -738,20 +726,6 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
     }
 
     Ok(())
-  }
-
-  fn register_concat_default_export(
-    &mut self,
-    content: &str,
-    state: &mut CssConcatenationState<'_>,
-    exports_info: &rspack_core::ExportsInfoData,
-    runtime: Option<&rspack_core::RuntimeSpec>,
-  ) {
-    let export_info = exports_info.get_read_only_export_info(&Atom::from("default"));
-    let Some(UsedNameItem::Str(used_name)) = export_info.get_used_name(None, runtime) else {
-      return;
-    };
-    self.register_concat_export("default", content, &used_name, state);
   }
 
   fn register_concat_export(
@@ -792,17 +766,13 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       orig_name: _,
     } in elements
     {
-      let part = self.render_css_export_part(ident, from.as_deref());
+      let part = match from {
+        None => self.render_local_css_export(ident),
+        Some(from_name) => self.render_standard_css_reexport(ident, from_name),
+      };
       push_joined(&mut content, &part, " + \" \" + ");
     }
     content
-  }
-
-  fn render_css_export_part(&mut self, ident: &str, from: Option<&str>) -> String {
-    match from {
-      None => self.render_local_css_export(ident),
-      Some(from_name) => self.render_standard_css_reexport(ident, from_name),
-    }
   }
 
   fn render_local_css_export(&self, ident: &str) -> String {
@@ -850,26 +820,13 @@ impl<'a, 'g> CssModuleGenerator<'a, 'g> {
       orig_name: _,
     } in elements
     {
-      let part = self.render_concat_export_part(ident, from.as_deref(), id.as_ref(), state);
+      let part = match from {
+        None => self.render_local_css_export(ident),
+        Some(from_name) => self.render_concat_reexport(ident, from_name, id.as_ref(), state),
+      };
       push_joined(&mut content, &part, " + \" \" + ");
     }
     content
-  }
-
-  fn render_concat_export_part<'b>(
-    &mut self,
-    ident: &'b str,
-    from: Option<&str>,
-    id: Option<&'b DependencyId>,
-    state: &mut CssConcatenationState<'b>,
-  ) -> String
-  where
-    'g: 'b,
-  {
-    match from {
-      None => self.render_local_css_export(ident),
-      Some(from_name) => self.render_concat_reexport(ident, from_name, id, state),
-    }
   }
 
   fn render_concat_reexport<'b>(
