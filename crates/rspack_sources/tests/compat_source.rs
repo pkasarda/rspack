@@ -1,9 +1,13 @@
 #![allow(missing_docs)]
 use std::{borrow::Cow, hash::Hash};
 
-use rspack_cacheable::{cacheable, cacheable_dyn, with::AsRefStr};
+use rspack_cacheable::{
+  cacheable, cacheable_dyn,
+  with::{AsOption, AsRefStr},
+};
 use rspack_sources::{
-  ConcatSource, MapOptions, ObjectPool, RawStringSource, Source, SourceExt, SourceMap, SourceValue,
+  ConcatSource, MapOptions, ObjectPool, RawStringSource, Source, SourceExt, SourceMap,
+  SourceMapAsJson, SourceValue,
   stream_chunks::{
     Chunks, GeneratedInfo, OnChunk, OnName, OnSource, StreamChunks, stream_chunks_default,
   },
@@ -13,7 +17,7 @@ use rspack_sources::{
 #[derive(Debug, Eq)]
 struct CompatSource(
   #[cacheable(with=AsRefStr)] Cow<'static, str>,
-  Option<SourceMap>,
+  #[cacheable(with=AsOption<SourceMapAsJson>)] Option<SourceMap>,
 );
 
 #[cacheable_dyn]

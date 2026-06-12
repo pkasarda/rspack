@@ -4,13 +4,20 @@ use std::{
   convert::{TryFrom, TryInto},
   fmt,
   hash::{Hash, Hasher},
+  io,
   sync::Arc,
 };
 
 use dyn_clone::DynClone;
 use rspack_cacheable::{
-  cacheable, cacheable_dyn,
-  with::{AsInner, AsOption, AsRefStr, AsVec},
+  __private::rkyv::{
+    Place,
+    rancor::Fallible,
+    ser::{Writer, WriterExt},
+    vec::{ArchivedVec, VecResolver},
+    with::{ArchiveWith, DeserializeWith, SerializeWith},
+  },
+  cacheable_dyn,
 };
 use serde::{Deserialize, Serialize};
 
@@ -258,31 +265,99 @@ fn is_all_empty(val: &[Arc<str>]) -> bool {
 }
 
 /// The source map created by [Source::map].
-#[cacheable]
 #[derive(Clone, PartialEq, Eq, Serialize)]
 pub struct SourceMap {
   version: u8,
-  #[cacheable(with=AsOption<AsRefStr>)]
   #[serde(skip_serializing_if = "Option::is_none")]
   file: Option<Arc<str>>,
-  #[cacheable(with=AsVec)]
   sources: Arc<[String]>,
-  #[cacheable(with=AsVec<AsRefStr>)]
   #[serde(rename = "sourcesContent", skip_serializing_if = "is_all_empty")]
   sources_content: Arc<[Arc<str>]>,
-  #[cacheable(with=AsVec)]
   names: Arc<[String]>,
-  #[cacheable(with=AsRefStr)]
   mappings: Arc<str>,
-  #[cacheable(with=AsOption<AsRefStr>)]
   #[serde(rename = "sourceRoot", skip_serializing_if = "Option::is_none")]
   source_root: Option<Arc<str>>,
-  #[cacheable(with=AsOption<AsRefStr>)]
   #[serde(rename = "debugId", skip_serializing_if = "Option::is_none")]
   debug_id: Option<Arc<str>>,
-  #[cacheable(with=AsOption<AsInner<AsVec>>)]
   #[serde(rename = "ignoreList", skip_serializing_if = "Option::is_none")]
   ignore_list: Option<Arc<Vec<u32>>>,
+}
+
+#[doc(hidden)]
+pub struct SourceMapAsJson;
+
+#[doc(hidden)]
+pub type ArchivedSourceMap = ArchivedVec<u8>;
+
+#[doc(hidden)]
+pub struct SourceMapAsJsonResolver {
+  pos: VecResolver,
+  len: usize,
+}
+
+struct SourceMapCacheWriter<'a, S: ?Sized> {
+  serializer: &'a mut S,
+  len: usize,
+}
+
+impl<S> io::Write for SourceMapCacheWriter<'_, S>
+where
+  S: Writer<rspack_cacheable::Error> + ?Sized,
+{
+  fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    Writer::write(self.serializer, buf).map_err(io::Error::other)?;
+    self.len += buf.len();
+    Ok(buf.len())
+  }
+
+  fn flush(&mut self) -> io::Result<()> {
+    Ok(())
+  }
+}
+
+impl ArchiveWith<SourceMap> for SourceMapAsJson {
+  type Archived = ArchivedSourceMap;
+  type Resolver = SourceMapAsJsonResolver;
+
+  #[inline]
+  fn resolve_with(_field: &SourceMap, resolver: Self::Resolver, out: Place<Self::Archived>) {
+    ArchivedVec::resolve_from_len(resolver.len, resolver.pos, out);
+  }
+}
+
+impl<S> SerializeWith<SourceMap, S> for SourceMapAsJson
+where
+  S: Fallible<Error = rspack_cacheable::Error> + Writer<rspack_cacheable::Error> + ?Sized,
+{
+  #[inline]
+  fn serialize_with(
+    field: &SourceMap,
+    serializer: &mut S,
+  ) -> rspack_cacheable::Result<Self::Resolver> {
+    let pos = serializer.align_for::<u8>()?;
+    let mut writer = SourceMapCacheWriter { serializer, len: 0 };
+    simd_json::to_writer(&mut writer, field)
+      .map_err(|_| rspack_cacheable::Error::MessageError("serialize source map failed"))?;
+
+    Ok(SourceMapAsJsonResolver {
+      pos: VecResolver::from_pos(pos),
+      len: writer.len,
+    })
+  }
+}
+
+impl<D> DeserializeWith<ArchivedSourceMap, SourceMap, D> for SourceMapAsJson
+where
+  D: Fallible<Error = rspack_cacheable::Error> + ?Sized,
+{
+  #[inline]
+  fn deserialize_with(
+    field: &ArchivedSourceMap,
+    _deserializer: &mut D,
+  ) -> rspack_cacheable::Result<SourceMap> {
+    SourceMap::from_slice(field.as_slice())
+      .map_err(|_| rspack_cacheable::Error::MessageError("deserialize source map failed"))
+  }
 }
 
 impl std::fmt::Debug for SourceMap {

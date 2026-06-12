@@ -10,7 +10,7 @@ use rspack_cacheable::{
 };
 
 use crate::{
-  MapOptions, Source, SourceMap, SourceValue,
+  MapOptions, Source, SourceMap, SourceMapAsJson, SourceValue,
   helpers::{
     Chunks, StreamChunks, TextSpan, get_map, stream_chunks_of_combined_source_map,
     stream_chunks_of_source_map,
@@ -71,9 +71,11 @@ pub struct SourceMapSource {
   value: Arc<str>,
   #[cacheable(with=AsRefStr)]
   name: Box<str>,
+  #[cacheable(with=SourceMapAsJson)]
   source_map: SourceMap,
   #[cacheable(with=AsOption<AsRefStr>)]
   original_source: Option<Arc<str>>,
+  #[cacheable(with=AsOption<SourceMapAsJson>)]
   inner_source_map: Option<SourceMap>,
   remove_original_source: bool,
 }

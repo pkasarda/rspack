@@ -1,5 +1,9 @@
 use rspack_cacheable::{enable_cacheable as cacheable, from_bytes, to_bytes, with::AsPreset};
-use rspack_sources::{BoxSource, ObjectPool, RawBufferSource, RawStringSource, SourceExt};
+use rspack_sources::{
+  BoxSource, CachedSource, ConcatSource, ObjectPool, OriginalSource, RawBufferSource,
+  RawStringSource, ReplaceSource, ReplacementEnforce, SourceExt, SourceMap, SourceMapSource,
+  WithoutOriginalOptions,
+};
 
 #[cacheable]
 #[derive(Debug)]
@@ -19,6 +23,23 @@ fn test_rspack_source() {
 
   test_data(Data(RawBufferSource::from("123".as_bytes()).boxed()));
   test_data(Data(RawStringSource::from_static("123").boxed()));
+  test_data(Data(
+    SourceMapSource::new(WithoutOriginalOptions {
+      value: "const answer = 42;\n",
+      name: "answer.js",
+      source_map: SourceMap::from_json(
+        r#"{
+          "version": 3,
+          "sources": ["answer.ts"],
+          "sourcesContent": ["const answer: number = 42;\n"],
+          "names": [],
+          "mappings": "AAAA"
+        }"#,
+      )
+      .unwrap(),
+    })
+    .boxed(),
+  ));
   test_data(Data(
     ConcatSource::new([
       RawStringSource::from_static("const ").boxed(),
