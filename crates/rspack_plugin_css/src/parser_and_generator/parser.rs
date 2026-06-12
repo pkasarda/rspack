@@ -13,7 +13,7 @@ use rspack_core::{
 use rspack_error::{Diagnostic, IntoTWithDiagnosticArray, Result, Severity, TWithDiagnosticArray};
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use super::{REGEX_CUSTOM_PROPERTY_IDENT, REGEX_IS_COMMENTS, REGEX_IS_MODULES};
+use super::{REGEX_CUSTOM_PROPERTY_IDENT, REGEX_IS_COMMENTS, is_css_module};
 use crate::{
   dependency::{
     CssComposeDependency, CssExportDependency, CssIcssSymbolDependency, CssIcssSymbolValue,
@@ -265,12 +265,10 @@ impl<'context> CssModuleParser<'context> {
       ModuleType::CssModule => css_module_lexer::Mode::Local,
       ModuleType::CssGlobal => css_module_lexer::Mode::Global,
       ModuleType::CssAuto
-        if resource_path.is_some()
-          && REGEX_IS_MODULES.is_match(
-            resource_path
-              .expect("should have resource_path for module_type css/auto")
-              .as_str(),
-          ) =>
+        if is_css_module(
+          self.parse_context.module_type,
+          resource_path.map(|path| path.as_str()),
+        ) =>
       {
         if self.pure() {
           css_module_lexer::Mode::Pure

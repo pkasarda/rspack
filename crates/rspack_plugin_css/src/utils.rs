@@ -410,13 +410,8 @@ pub fn replace_css_module_id_placeholder<'a>(
 }
 
 fn css_module_id_for_local_ident(compilation: &Compilation, module: &dyn Module) -> String {
-  let Some(module_id) =
-    ChunkGraph::get_module_id(&compilation.module_ids_artifact, module.identifier())
-  else {
-    return module
-      .readable_identifier(&compilation.options.context)
-      .into_owned();
-  };
+  let module_id = ChunkGraph::get_module_id(&compilation.module_ids_artifact, module.identifier())
+    .expect("css module should have module id when rendering local ident");
   let module_id = module_id.as_str();
 
   let needs_stable_long_id = module

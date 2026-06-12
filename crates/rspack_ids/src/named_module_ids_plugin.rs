@@ -233,11 +233,13 @@ async fn module_ids(
         };
       not_used
         && module.need_id()
-        && compilation
+        && (compilation
           .build_chunk_graph_artifact
           .chunk_graph
           .get_number_of_module_chunks(*module_identifier)
           != 0
+          || module.build_meta().is_css_module
+          || module.build_meta().need_id_in_concatenation)
     })
     .map(|(m, _)| *m)
     .collect();

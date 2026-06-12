@@ -88,6 +88,16 @@ impl CssParserAndGenerator {
   }
 }
 
+fn is_css_module(module_type: &rspack_core::ModuleType, resource_path: Option<&str>) -> bool {
+  match module_type {
+    rspack_core::ModuleType::CssModule => true,
+    rspack_core::ModuleType::CssAuto => {
+      resource_path.is_some_and(|path| REGEX_IS_MODULES.is_match(path))
+    }
+    _ => false,
+  }
+}
+
 fn css_parser_options(parser_options: Option<&ParserOptions>) -> &CssAutoOrModuleParserOptions {
   parser_options
     .and_then(ParserOptions::get_css_module)
@@ -239,6 +249,11 @@ impl ParserAndGenerator for CssParserAndGenerator {
       let build_meta = &mut *parse_context.build_meta;
 
       build_info.strict = true;
+      build_meta.is_css_module = is_css_module(
+        parse_context.module_type,
+        parse_context.resource_data.path().map(|path| path.as_str()),
+      );
+      build_meta.need_id_in_concatenation = self.export_type == Some(CssExportType::Style);
       build_meta.exports_type = if named_exports {
         BuildMetaExportsType::Namespace
       } else {
