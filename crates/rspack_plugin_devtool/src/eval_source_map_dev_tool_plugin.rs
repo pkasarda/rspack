@@ -1,4 +1,4 @@
-use std::{hash::Hash, sync::Arc};
+use std::sync::Arc;
 
 use derive_more::Debug;
 use futures::future::join_all;
@@ -287,7 +287,7 @@ async fn js_chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  EVAL_SOURCE_MAP_DEV_TOOL_PLUGIN_NAME.hash(hasher);
+  hasher.update(EVAL_SOURCE_MAP_DEV_TOOL_PLUGIN_NAME);
   Ok(())
 }
 

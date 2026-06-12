@@ -1,4 +1,4 @@
-use std::{borrow::Cow, hash::Hash, sync::Arc};
+use std::{borrow::Cow, sync::Arc};
 
 use async_trait::async_trait;
 use rspack_cacheable::{cacheable, cacheable_dyn};
@@ -194,13 +194,11 @@ impl Module for DelegatedModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    self.delegation_type.hash(&mut hasher);
-
-    if let Some(request) = &self.request {
-      request.hash(&mut hasher);
+    {
+      hasher.update(&self.delegation_type);
+      hasher.update(&self.request);
+      module_update_hash(self, &mut hasher, compilation, runtime);
     }
-
-    module_update_hash(self, &mut hasher, compilation, runtime);
 
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }

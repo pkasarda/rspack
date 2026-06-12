@@ -1,6 +1,5 @@
 use std::{
   collections::hash_map::Entry,
-  hash::Hash,
   ops::{Deref, DerefMut},
   sync::atomic::AtomicU32,
 };
@@ -166,11 +165,11 @@ impl CodeGenerationResult {
   ) {
     let mut hasher = RspackHash::with_salt(hash_function, hash_salt);
     for (source_type, source) in self.inner.as_ref() {
-      source_type.hash(&mut hasher);
-      source.hash(&mut hasher);
+      hasher.update(source_type);
+      hasher.write(source.source().as_bytes());
     }
-    self.chunk_init_fragments.hash(&mut hasher);
-    self.runtime_requirements.hash(&mut hasher);
+    hasher.update(&self.chunk_init_fragments);
+    hasher.update(&self.runtime_requirements);
     self.hash = Some(hasher.digest(hash_digest));
   }
 
@@ -186,12 +185,12 @@ impl CodeGenerationResult {
     hash_salt: &HashSalt,
   ) {
     let mut hasher = RspackHash::with_salt(hash_function, hash_salt);
-    runtime_hash.hash(&mut hasher);
+    hasher.update(runtime_hash);
     for source_type in self.inner.as_ref().keys() {
-      source_type.hash(&mut hasher);
+      hasher.update(source_type);
     }
-    self.chunk_init_fragments.hash(&mut hasher);
-    self.runtime_requirements.hash(&mut hasher);
+    hasher.update(&self.chunk_init_fragments);
+    hasher.update(&self.runtime_requirements);
     self.hash = Some(hasher.digest(hash_digest));
   }
 }

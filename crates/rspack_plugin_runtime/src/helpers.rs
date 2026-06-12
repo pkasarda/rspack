@@ -1,4 +1,4 @@
-use std::{hash::Hash, sync::LazyLock};
+use std::sync::LazyLock;
 
 use itertools::Itertools;
 use regex::Regex;
@@ -47,7 +47,7 @@ pub fn update_hash_for_entry_startup(
         ChunkGraph::get_module_id(&compilation.module_ids_artifact, module.module_identifier)
       })
     {
-      module_id.hash(hasher);
+      hasher.update(&module_id);
     }
 
     if let Some(runtime_chunk) = compilation
@@ -67,7 +67,7 @@ pub fn update_hash_for_entry_startup(
           .chunk_by_ukey
           .get(&chunk_ukey)
         {
-          chunk.id().hash(hasher);
+          hasher.update(&chunk.id());
         }
       }
     }

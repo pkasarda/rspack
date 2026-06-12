@@ -21,7 +21,7 @@ use rspack_core::{
   },
 };
 use rspack_error::{Diagnostic, Result};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_javascript_compiler::JavaScriptCompiler;
 use rspack_plugin_javascript::{ExtractedCommentsInfo, JavascriptModulesChunkHash, JsPlugin};
@@ -99,11 +99,51 @@ impl std::hash::Hash for MinimizerOptions {
   }
 }
 
+impl RspackContentHash for MinimizerOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self
+      .__format_cache
+      .get_or_init(|| simd_json::to_string(&self.format).expect("Should be able to serialize"))
+      .rspack_content_hash(state);
+    let compress_cache = self.__compress_cache.get_or_init(|| {
+      self
+        .compress
+        .as_ref()
+        .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
+    });
+    simd_json::to_string(compress_cache)
+      .expect("Should be able to serialize")
+      .rspack_content_hash(state);
+    let mangle_cache = self.__mangle_cache.get_or_init(|| {
+      self
+        .mangle
+        .as_ref()
+        .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
+    });
+    simd_json::to_string(mangle_cache)
+      .expect("Should be able to serialize")
+      .rspack_content_hash(state);
+  }
+}
+
 #[derive(Debug, Hash)]
 pub enum OptionWrapper<T: std::fmt::Debug + Hash> {
   Default,
   Disabled,
   Custom(T),
+}
+
+impl<T: std::fmt::Debug + Hash + RspackContentHash> RspackContentHash for OptionWrapper<T> {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      OptionWrapper::Default => "default".rspack_content_hash(state),
+      OptionWrapper::Disabled => "disabled".rspack_content_hash(state),
+      OptionWrapper::Custom(value) => {
+        "custom".rspack_content_hash(state);
+        value.rspack_content_hash(state);
+      }
+    }
+  }
 }
 
 #[derive(Debug)]
@@ -118,6 +158,24 @@ impl Hash for ExtractComments {
     self.condition.as_str().hash(state);
     self.condition_flags.as_str().hash(state);
     self.banner.hash(state);
+  }
+}
+
+impl RspackContentHash for ExtractComments {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.condition.as_str().rspack_content_hash(state);
+    self.condition_flags.as_str().rspack_content_hash(state);
+    self.banner.rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for PluginOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.test.rspack_content_hash(state);
+    self.include.rspack_content_hash(state);
+    self.exclude.rspack_content_hash(state);
+    self.extract_comments.rspack_content_hash(state);
+    self.minimizer_options.rspack_content_hash(state);
   }
 }
 
@@ -164,7 +222,7 @@ async fn js_chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  self.options_hash.hash(hasher);
+  hasher.update(&self.options);
   Ok(())
 }
 

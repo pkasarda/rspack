@@ -1,4 +1,4 @@
-use std::{borrow::Cow, hash::Hash};
+use std::borrow::Cow;
 
 use rspack_cacheable::{
   cacheable, cacheable_dyn,
@@ -149,8 +149,10 @@ impl Module for RawModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    self.source_str.hash(&mut hasher);
-    module_update_hash(self, &mut hasher, compilation, runtime);
+    {
+      hasher.update(&self.source_str);
+      module_update_hash(self, &mut hasher, compilation, runtime);
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 

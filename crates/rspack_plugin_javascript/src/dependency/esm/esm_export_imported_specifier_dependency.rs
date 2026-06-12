@@ -26,7 +26,8 @@ use rspack_core::{
   property_name, render_make_deferred_namespace_mode_from_exports_type, to_normal_comment,
 };
 use rspack_error::{Diagnostic, Error, Severity};
-use rspack_util::{ext::DynHash, json_stringify};
+use rspack_hash::RspackHash;
+use rspack_util::json_stringify;
 use rustc_hash::{FxHashSet as HashSet, FxHasher};
 use swc_atoms::Atom;
 
@@ -1137,7 +1138,7 @@ pub struct DiscoverActiveExportsFromOtherStarExportsRet {
 impl DependencyCodeGeneration for ESMExportImportedSpecifierDependency {
   fn update_hash(
     &self,
-    hasher: &mut dyn std::hash::Hasher,
+    hasher: &mut RspackHash,
     compilation: &rspack_core::Compilation,
     runtime: Option<&RuntimeSpec>,
   ) {
@@ -1170,9 +1171,9 @@ impl DependencyCodeGeneration for ESMExportImportedSpecifierDependency {
       if let Some(UsedName::Inlined(inlined)) =
         exports_info.get_used_name(&compilation.exports_info_artifact, runtime, &item.ids)
       {
-        item.name.dyn_hash(hasher);
-        item.ids.dyn_hash(hasher);
-        inlined.dyn_hash(hasher);
+        hasher.update(&item.name);
+        hasher.update(&item.ids);
+        hasher.update(&inlined);
       }
     }
   }

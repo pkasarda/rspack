@@ -1,5 +1,5 @@
 use rspack_cacheable::{cacheable, cacheable_dyn};
-use rspack_util::ext::DynHash;
+use rspack_hash::{RspackContentHash, RspackHash};
 
 use crate::{
   Compilation, DependencyCodeGeneration, DependencyRange, DependencyTemplate,
@@ -13,6 +13,17 @@ pub enum RuntimeRequirementsDependencyMode {
   Normal,
   Call,
   AddOnly,
+}
+
+impl RspackContentHash for RuntimeRequirementsDependencyMode {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      RuntimeRequirementsDependencyMode::Normal => "normal",
+      RuntimeRequirementsDependencyMode::Call => "call",
+      RuntimeRequirementsDependencyMode::AddOnly => "add-only",
+    }
+    .rspack_content_hash(state);
+  }
 }
 
 #[cacheable]
@@ -31,13 +42,13 @@ impl DependencyCodeGeneration for RuntimeRequirementsDependency {
 
   fn update_hash(
     &self,
-    hasher: &mut dyn std::hash::Hasher,
+    hasher: &mut RspackHash,
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    self.range.dyn_hash(hasher);
-    self.runtime_requirements.dyn_hash(hasher);
-    self.mode.dyn_hash(hasher);
+    hasher.update(&self.range);
+    hasher.update(&self.runtime_requirements);
+    hasher.update(&self.mode);
   }
 }
 

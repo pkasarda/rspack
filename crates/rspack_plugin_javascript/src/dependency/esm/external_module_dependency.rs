@@ -4,7 +4,7 @@ use rspack_core::{
   ExternalModuleInitFragment, InitFragmentExt, InitFragmentStage, RuntimeSpec, TemplateContext,
   TemplateReplaceSource,
 };
-use rspack_util::ext::DynHash;
+use rspack_hash::RspackHash;
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -36,13 +36,13 @@ impl DependencyCodeGeneration for ExternalModuleDependency {
 
   fn update_hash(
     &self,
-    hasher: &mut dyn std::hash::Hasher,
+    hasher: &mut RspackHash,
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    self.module.dyn_hash(hasher);
-    self.import_specifier.dyn_hash(hasher);
-    self.default_import.dyn_hash(hasher);
+    hasher.update(&self.module);
+    hasher.update(&self.import_specifier);
+    hasher.update(&self.default_import);
   }
 }
 

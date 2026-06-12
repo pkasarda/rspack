@@ -231,16 +231,14 @@ pub fn impl_runtime_module(
         compilation: &::rspack_core::Compilation,
         runtime: Option<&::rspack_core::RuntimeSpec>,
       ) -> rspack_error::Result<::rspack_hash::RspackHashDigest> {
-        use rspack_util::ext::DynHash;
-        use rspack_core::NamedRuntimeModule;
+        use rspack_core::{NamedRuntimeModule, rspack_sources::Source};
         let mut hasher = rspack_hash::RspackHash::from(&compilation.options.output);
-        self.name().dyn_hash(&mut hasher);
-        self.stage().dyn_hash(&mut hasher);
+        hasher.update(&self.name());
+        hasher.update(&self.stage());
         if self.full_hash() || self.dependent_hash() {
-          use std::hash::Hash;
-          self.generate_with_custom(compilation).await?.hash(&mut hasher);
+          hasher.update(&self.generate_with_custom(compilation).await?);
         } else {
-          self.get_generated_code(compilation).await?.dyn_hash(&mut hasher);
+          hasher.write(self.get_generated_code(compilation).await?.source().as_bytes());
         }
         Ok(hasher.digest(&compilation.options.output.hash_digest))
       }

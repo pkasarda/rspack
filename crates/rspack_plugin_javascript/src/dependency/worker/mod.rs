@@ -9,7 +9,7 @@ use rspack_core::{
   ExportsInfoArtifact, ExtendedReferencedExport, FactorizeInfo, ModuleDependency, ModuleGraph,
   ModuleGraphCacheArtifact, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_util::ext::DynHash;
+use rspack_hash::RspackHash;
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -103,11 +103,11 @@ impl DependencyCodeGeneration for WorkerDependency {
 
   fn update_hash(
     &self,
-    hasher: &mut dyn std::hash::Hasher,
+    hasher: &mut RspackHash,
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    self.public_path.dyn_hash(hasher);
+    hasher.update(&self.public_path);
   }
 }
 

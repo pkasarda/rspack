@@ -10,7 +10,7 @@ use derive_more::Debug;
 use futures::future::BoxFuture;
 use rspack_cacheable::{cacheable, with::Unsupported};
 use rspack_error::{Result, error};
-use rspack_hash::{HashDigest, HashFunction, HashSalt};
+use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackContentHash, RspackHash};
 use rspack_macros::MergeFrom;
 use rspack_regex::RspackRegex;
 use rspack_util::{MergeFrom, try_all, try_any};
@@ -146,6 +146,12 @@ impl fmt::Display for DynamicImportFetchPriority {
       DynamicImportFetchPriority::High => write!(f, "high"),
       DynamicImportFetchPriority::Auto => write!(f, "auto"),
     }
+  }
+}
+
+impl RspackContentHash for DynamicImportFetchPriority {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.to_string().rspack_content_hash(state);
   }
 }
 
@@ -822,6 +828,13 @@ pub struct AssetGeneratorDataUrlOptions {
   pub mimetype: Option<String>,
 }
 
+impl RspackContentHash for AssetGeneratorDataUrlOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.encoding.rspack_content_hash(state);
+    self.mimetype.rspack_content_hash(state);
+  }
+}
+
 #[cacheable]
 #[derive(Debug, Clone, MergeFrom, Hash)]
 pub enum DataUrlEncoding {
@@ -835,6 +848,12 @@ impl fmt::Display for DataUrlEncoding {
       DataUrlEncoding::None => write!(f, ""),
       DataUrlEncoding::Base64 => write!(f, "base64"),
     }
+  }
+}
+
+impl RspackContentHash for DataUrlEncoding {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.to_string().rspack_content_hash(state);
   }
 }
 

@@ -1,11 +1,11 @@
-use std::{borrow::Cow, hash::Hash, iter};
+use std::{borrow::Cow, iter};
 
 use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_collections::{Identifiable, Identifier};
 use rspack_error::{Result, impl_empty_diagnosable_trait};
 use rspack_hash::{RspackHash, RspackHashDigest};
 use rspack_macros::impl_source_map_config;
-use rspack_util::{ext::DynHash, json_stringify_str, source_map::SourceMapKind};
+use rspack_util::{json_stringify_str, source_map::SourceMapKind};
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};
 use serde::Serialize;
 
@@ -668,11 +668,9 @@ impl ExternalModule {
             || self.dependency_meta.attributes.is_some()
           {
             let mut hasher = RspackHash::from(&compilation.options.output);
-            request.primary.hash(&mut hasher);
+            hasher.update(&request.primary);
             if let Some(attributes) = &self.dependency_meta.attributes {
-              simd_json::to_string(attributes)
-                .expect("json stringify failed")
-                .hash(&mut hasher);
+              hasher.update(&simd_json::to_string(attributes).expect("json stringify failed"));
             }
             let hash_suffix = hasher.digest(&compilation.options.output.hash_digest);
             Cow::Owned(format!(
@@ -1189,7 +1187,9 @@ impl Module for ExternalModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    self.id.dyn_hash(&mut hasher);
+    {
+      hasher.update(self.id.as_str());
+    }
     let side_effects_state_artifact = &compilation
       .build_module_graph_artifact
       .side_effects_state_artifact;
@@ -1199,8 +1199,10 @@ impl Module for ExternalModule {
       side_effects_state_artifact,
       &compilation.exports_info_artifact,
     );
-    is_optional.dyn_hash(&mut hasher);
-    module_update_hash(self, &mut hasher, compilation, runtime);
+    {
+      hasher.update(&is_optional);
+      module_update_hash(self, &mut hasher, compilation, runtime);
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 }

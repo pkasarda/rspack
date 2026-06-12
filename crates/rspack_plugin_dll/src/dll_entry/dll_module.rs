@@ -1,4 +1,4 @@
-use std::{borrow::Cow, hash::Hash, sync::Arc};
+use std::{borrow::Cow, sync::Arc};
 
 use async_trait::async_trait;
 use rspack_cacheable::{cacheable, cacheable_dyn};
@@ -132,9 +132,10 @@ impl Module for DllModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    format!("dll module {}", self.name).hash(&mut hasher);
-
-    module_update_hash(self, &mut hasher, compilation, runtime);
+    {
+      hasher.update(&format!("dll module {}", self.name));
+      module_update_hash(self, &mut hasher, compilation, runtime);
+    }
 
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }

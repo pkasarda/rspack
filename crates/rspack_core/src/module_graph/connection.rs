@@ -1,6 +1,7 @@
 use std::hash::Hash;
 
 use rspack_cacheable::cacheable;
+use rspack_hash::{RspackContentHash, RspackHash};
 
 use crate::{
   DependencyId, ExportsInfoArtifact, ModuleGraph, ModuleGraphCacheArtifact, ModuleIdentifier,
@@ -139,6 +140,19 @@ pub enum ConnectionState {
   CircularConnection,
   // Module itself is not connected, but transitive modules are connected transitively.
   TransitiveOnly,
+}
+
+impl RspackContentHash for ConnectionState {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      ConnectionState::Active(value) => {
+        "active".rspack_content_hash(state);
+        value.rspack_content_hash(state);
+      }
+      ConnectionState::CircularConnection => "circular".rspack_content_hash(state),
+      ConnectionState::TransitiveOnly => "transitive-only".rspack_content_hash(state),
+    }
+  }
 }
 
 impl ConnectionState {

@@ -19,7 +19,6 @@ use rspack_error::{Result, TWithDiagnosticArray};
 use rspack_hash::{RspackHash, RspackHashDigest};
 use rspack_util::{
   atom::Atom,
-  ext::DynHash,
   fx_hash::{FxIndexMap, FxIndexSet},
 };
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -358,7 +357,11 @@ impl ParserAndGenerator for CssParserAndGenerator {
     _runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    Self::es_module(css_generator_options(module.get_generator_options())).dyn_hash(&mut hasher);
+    {
+      hasher.update(&Self::es_module(css_generator_options(
+        module.get_generator_options(),
+      )));
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 }

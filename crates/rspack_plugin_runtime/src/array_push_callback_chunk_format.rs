@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use rspack_core::{
   ChunkGraph, ChunkKind, ChunkUkey, Compilation, CompilationAdditionalChunkRuntimeRequirements,
   CompilationParams, CompilerCompilation, Plugin, RuntimeCodeTemplate, RuntimeGlobals,
@@ -82,21 +80,23 @@ async fn js_chunk_hash(
     return Ok(());
   }
 
-  PLUGIN_NAME.hash(hasher);
-  let output = &compilation.options.output;
-  output.global_object.hash(hasher);
-  output.chunk_loading_global.hash(hasher);
-  output.hot_update_global.hash(hasher);
+  {
+    hasher.update(PLUGIN_NAME);
+    let output = &compilation.options.output;
+    hasher.update(&output.global_object);
+    hasher.update(&output.chunk_loading_global);
+    hasher.update(&output.hot_update_global);
 
-  update_hash_for_entry_startup(
-    hasher,
-    compilation,
-    compilation
-      .build_chunk_graph_artifact
-      .chunk_graph
-      .get_chunk_entry_modules_with_chunk_group_iterable(chunk_ukey),
-    chunk_ukey,
-  );
+    update_hash_for_entry_startup(
+      hasher,
+      compilation,
+      compilation
+        .build_chunk_graph_artifact
+        .chunk_graph
+        .get_chunk_entry_modules_with_chunk_group_iterable(chunk_ukey),
+      chunk_ukey,
+    );
+  }
 
   Ok(())
 }

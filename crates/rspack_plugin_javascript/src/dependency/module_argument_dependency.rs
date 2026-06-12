@@ -3,7 +3,7 @@ use rspack_core::{
   Compilation, DependencyCodeGeneration, DependencyLocation, DependencyRange, DependencyTemplate,
   DependencyTemplateType, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_util::ext::DynHash;
+use rspack_hash::RspackHash;
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -31,12 +31,12 @@ impl DependencyCodeGeneration for ModuleArgumentDependency {
 
   fn update_hash(
     &self,
-    hasher: &mut dyn std::hash::Hasher,
+    hasher: &mut RspackHash,
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    self.id.dyn_hash(hasher);
-    self.range.dyn_hash(hasher);
+    hasher.update(&self.id);
+    hasher.update(&self.range);
   }
 }
 

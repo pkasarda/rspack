@@ -1,15 +1,11 @@
 //!  There are methods whose verb is `ChunkGraphModule`
 
-use std::{
-  fmt,
-  hash::{BuildHasherDefault, Hash, Hasher},
-};
+use std::{fmt, hash::BuildHasherDefault};
 
 use rspack_cacheable::{cacheable, with::AsPreset};
 use rspack_collections::{IdentifierHasher, IdentifierSet};
-use rspack_hash::RspackHashDigest;
-use rspack_util::ext::DynHash;
-use rustc_hash::{FxHashSet, FxHasher};
+use rspack_hash::{HashFunction, RspackContentHash, RspackHash, RspackHashDigest};
+use rustc_hash::FxHashSet;
 use serde::{Serialize, Serializer};
 use ustr::Ustr;
 
@@ -71,6 +67,12 @@ impl ModuleId {
 
   pub fn as_str(&self) -> &str {
     self.0.as_str()
+  }
+}
+
+impl RspackContentHash for ModuleId {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_str().rspack_content_hash(state);
   }
 }
 
@@ -320,16 +322,16 @@ impl ChunkGraph {
     compilation: &Compilation,
     runtime: Option<&RuntimeSpec>,
   ) -> u64 {
-    let mut hasher = FxHasher::default();
+    let mut hasher = RspackHash::new(&HashFunction::Xxhash64);
     let strict = module.get_strict_esm_module();
     let mg = compilation.get_module_graph();
     let mg_cache = &compilation.module_graph_cache_artifact;
     let side_effects_state_artifact = &compilation
       .build_module_graph_artifact
       .side_effects_state_artifact;
-    self
-      .get_module_graph_hash_without_connections(module, compilation, runtime)
-      .hash(&mut hasher);
+    {
+      hasher.update(&self.get_module_graph_hash_without_connections(module, compilation, runtime));
+    }
 
     let mut visited_modules = IdentifierSet::default();
     visited_modules.insert(module.identifier());
@@ -364,7 +366,7 @@ impl ChunkGraph {
               side_effects_state_artifact,
               &compilation.exports_info_artifact,
             );
-            active_state.hash(&mut hasher);
+            hasher.update(&active_state);
           },
           true,
         );
@@ -377,17 +379,16 @@ impl ChunkGraph {
         .module_by_identifier(module_identifier)
         .expect("should have module")
         .as_ref();
-      module
-        .get_exports_type(
-          mg,
-          &compilation.module_graph_cache_artifact,
-          &compilation.exports_info_artifact,
-          strict,
-        )
-        .hash(&mut hasher);
-      self
-        .get_module_graph_hash_without_connections(module, compilation, runtime)
-        .hash(&mut hasher);
+      let exports_type = module.get_exports_type(
+        mg,
+        &compilation.module_graph_cache_artifact,
+        &compilation.exports_info_artifact,
+        strict,
+      );
+      let module_graph_hash =
+        self.get_module_graph_hash_without_connections(module, compilation, runtime);
+      hasher.update(&exports_type);
+      hasher.update(&module_graph_hash);
     }
 
     hasher.finish()
@@ -408,19 +409,27 @@ impl ChunkGraph {
           runtime.map(|r| get_runtime_key(r).clone()),
         ),
         || {
-          let mut hasher = FxHasher::default();
+          let mut hasher = RspackHash::new(&HashFunction::Xxhash64);
           let module_identifier = module.identifier();
 
-          Self::get_module_id(&compilation.module_ids_artifact, module_identifier)
-            .dyn_hash(&mut hasher);
-          module.source_types(mg).dyn_hash(&mut hasher);
-          ModuleGraph::is_async(&compilation.async_modules_artifact, &module_identifier)
-            .dyn_hash(&mut hasher);
+          {
+            hasher.update(&Self::get_module_id(
+              &compilation.module_ids_artifact,
+              module_identifier,
+            ));
+            hasher.update(&module.source_types(mg));
+            hasher.update(&ModuleGraph::is_async(
+              &compilation.async_modules_artifact,
+              &module_identifier,
+            ));
+          }
 
           let exports_info = compilation
             .exports_info_artifact
             .get_exports_info_data(&module_identifier);
-          exports_info.update_hash(&compilation.exports_info_artifact, &mut hasher, runtime);
+          {
+            exports_info.update_hash(&compilation.exports_info_artifact, &mut hasher, runtime);
+          }
           hasher.finish()
         },
       )

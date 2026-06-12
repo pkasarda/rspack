@@ -1,13 +1,21 @@
 use std::{
+  borrow::Cow,
+  collections::{BTreeMap, BTreeSet},
   fmt,
   hash::{Hash, Hasher},
+  path::{Path, PathBuf},
   sync::Arc,
 };
 
 use base64_simd::{AsOut, STANDARD, URL_SAFE_NO_PAD};
 use md4::Digest;
 use rspack_cacheable::{cacheable, with::AsPreset};
-use rspack_util::MergeFrom;
+use rspack_collections::Identifier;
+use rspack_util::{
+  MergeFrom,
+  asset_condition::{AssetCondition, AssetConditions},
+  atom::Atom,
+};
 use smol_str::SmolStr;
 use xxhash_rust::xxh64::Xxh64;
 
@@ -114,6 +122,175 @@ pub enum RspackHash {
   SHA256(Box<sha2::Sha256>),
 }
 
+pub trait RspackContentHash {
+  fn rspack_content_hash(&self, state: &mut RspackHash);
+}
+
+impl<T: RspackContentHash + ?Sized> RspackContentHash for &T {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    (*self).rspack_content_hash(state);
+  }
+}
+
+impl<T: RspackContentHash + ?Sized> RspackContentHash for Box<T> {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    (**self).rspack_content_hash(state);
+  }
+}
+
+impl<T: RspackContentHash> RspackContentHash for Option<T> {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    if let Some(value) = self {
+      value.rspack_content_hash(state);
+    }
+  }
+}
+
+impl<T: RspackContentHash> RspackContentHash for [T] {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    for value in self {
+      value.rspack_content_hash(state);
+    }
+  }
+}
+
+impl<T: RspackContentHash> RspackContentHash for Vec<T> {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_slice().rspack_content_hash(state);
+  }
+}
+
+impl<T: RspackContentHash + Ord> RspackContentHash for BTreeSet<T> {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    for value in self {
+      value.rspack_content_hash(state);
+    }
+  }
+}
+
+impl<K: RspackContentHash + Ord, V: RspackContentHash> RspackContentHash for BTreeMap<K, V> {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    for (key, value) in self {
+      key.rspack_content_hash(state);
+      value.rspack_content_hash(state);
+    }
+  }
+}
+
+impl<T: RspackContentHash, const N: usize> RspackContentHash for [T; N] {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_slice().rspack_content_hash(state);
+  }
+}
+
+impl<A: RspackContentHash, B: RspackContentHash> RspackContentHash for (A, B) {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.0.rspack_content_hash(state);
+    self.1.rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for str {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    state.write(self.as_bytes());
+  }
+}
+
+impl RspackContentHash for String {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_str().rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for SmolStr {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_str().rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for Atom {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_str().rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for Identifier {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_str().rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for Cow<'_, str> {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_ref().rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for bool {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    state.write(if *self { b"true" } else { b"false" });
+  }
+}
+
+macro_rules! impl_content_hash_for_integer {
+  ($($ty:ty),+ $(,)?) => {
+    $(
+      impl RspackContentHash for $ty {
+        fn rspack_content_hash(&self, state: &mut RspackHash) {
+          state.write(self.to_string().as_bytes());
+        }
+      }
+    )+
+  };
+}
+
+impl_content_hash_for_integer!(
+  u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
+
+impl RspackContentHash for Path {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.to_string_lossy().rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for PathBuf {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_path().rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for AssetCondition {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      AssetCondition::String(value) => {
+        "string".rspack_content_hash(state);
+        value.rspack_content_hash(state);
+      }
+      AssetCondition::Regexp(value) => {
+        "regexp".rspack_content_hash(state);
+        value.source.rspack_content_hash(state);
+        value.flags.rspack_content_hash(state);
+      }
+    }
+  }
+}
+
+impl RspackContentHash for AssetConditions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      AssetConditions::Single(value) => {
+        "single".rspack_content_hash(state);
+        value.rspack_content_hash(state);
+      }
+      AssetConditions::Multiple(value) => {
+        "multiple".rspack_content_hash(state);
+        value.rspack_content_hash(state);
+      }
+    }
+  }
+}
+
 impl fmt::Debug for RspackHash {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
@@ -141,6 +318,40 @@ impl RspackHash {
     this
   }
 
+  pub fn update<T: RspackContentHash + ?Sized>(&mut self, value: &T) {
+    value.rspack_content_hash(self);
+  }
+
+  pub fn write(&mut self, bytes: &[u8]) {
+    match self {
+      RspackHash::Xxhash64(hasher) => hasher.write(bytes),
+      RspackHash::MD4(hasher) => hasher.update(bytes),
+      RspackHash::SHA256(hasher) => hasher.update(bytes),
+    }
+  }
+
+  pub fn finish(&self) -> u64 {
+    match self {
+      RspackHash::Xxhash64(hasher) => hasher.finish(),
+      RspackHash::MD4(hasher) => {
+        let hash = (**hasher).clone().finalize();
+        u64::from_be_bytes(
+          hash[..8]
+            .try_into()
+            .expect("md4 digest length is at least 8"),
+        )
+      }
+      RspackHash::SHA256(hasher) => {
+        let hash = (**hasher).clone().finalize();
+        u64::from_be_bytes(
+          hash[..8]
+            .try_into()
+            .expect("sha256 digest length is at least 8"),
+        )
+      }
+    }
+  }
+
   pub fn digest(self, digest: &HashDigest) -> RspackHashDigest {
     match self {
       RspackHash::Xxhash64(hasher) => {
@@ -155,47 +366,6 @@ impl RspackHash {
         let buf = hash.finalize();
         RspackHashDigest::new(&buf, digest)
       }
-    }
-  }
-}
-
-impl Hasher for RspackHash {
-  fn finish(&self) -> u64 {
-    match self {
-      RspackHash::Xxhash64(hasher) => hasher.finish(),
-      RspackHash::MD4(hasher) => {
-        // finalize take ownership, so we need to clone it
-        let hash = (**hasher).clone().finalize();
-        let msb_u64: u64 = ((hash[0] as u64) << 56)
-          | ((hash[1] as u64) << 48)
-          | ((hash[2] as u64) << 40)
-          | ((hash[3] as u64) << 32)
-          | ((hash[4] as u64) << 24)
-          | ((hash[5] as u64) << 16)
-          | ((hash[6] as u64) << 8)
-          | (hash[7] as u64);
-        msb_u64
-      }
-      RspackHash::SHA256(hasher) => {
-        let hash = (**hasher).clone().finalize();
-        let msb_u64: u64 = ((hash[0] as u64) << 56)
-          | ((hash[1] as u64) << 48)
-          | ((hash[2] as u64) << 40)
-          | ((hash[3] as u64) << 32)
-          | ((hash[4] as u64) << 24)
-          | ((hash[5] as u64) << 16)
-          | ((hash[6] as u64) << 8)
-          | (hash[7] as u64);
-        msb_u64
-      }
-    }
-  }
-
-  fn write(&mut self, bytes: &[u8]) {
-    match self {
-      RspackHash::Xxhash64(hasher) => hasher.write(bytes),
-      RspackHash::MD4(hasher) => hasher.update(bytes),
-      RspackHash::SHA256(hasher) => hasher.update(bytes),
     }
   }
 }
@@ -260,6 +430,12 @@ impl RspackHashDigest {
 impl Hash for RspackHashDigest {
   fn hash<H: Hasher>(&self, state: &mut H) {
     self.encoded.hash(state);
+  }
+}
+
+impl RspackContentHash for RspackHashDigest {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.encoded.rspack_content_hash(state);
   }
 }
 

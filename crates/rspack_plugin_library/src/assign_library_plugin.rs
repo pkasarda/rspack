@@ -1,4 +1,4 @@
-use std::{hash::Hash, sync::LazyLock};
+use std::sync::LazyLock;
 
 use futures::future::join_all;
 use regex::Regex;
@@ -361,7 +361,6 @@ async fn js_chunk_hash(
   let Some(options) = self.get_options_for_chunk(compilation, chunk_ukey)? else {
     return Ok(());
   };
-  PLUGIN_NAME.hash(hasher);
   let chunk = compilation
     .build_chunk_graph_artifact
     .chunk_by_ukey
@@ -369,15 +368,16 @@ async fn js_chunk_hash(
   let full_resolved_name = self
     .get_resolved_full_name(&options, compilation, chunk)
     .await?;
+  hasher.update(PLUGIN_NAME);
   if self.is_copy(&options) {
-    "copy".hash(hasher);
+    hasher.update("copy");
   }
   if self.options.declare {
-    self.options.declare.hash(hasher);
+    hasher.update(&self.options.declare);
   }
-  full_resolved_name.join(".").hash(hasher);
+  hasher.update(&full_resolved_name.join("."));
   if let Some(export) = options.export {
-    export.hash(hasher);
+    hasher.update(&export);
   }
   Ok(())
 }

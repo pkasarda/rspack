@@ -21,7 +21,7 @@ use rspack_core::{
   },
 };
 use rspack_error::{Diagnostic, Result, ToStringResultToRspackResultExt};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_util::asset_condition::{AssetConditions, AssetConditionsObject, match_object};
 use thread_local::ThreadLocal;
@@ -43,9 +43,21 @@ pub struct Draft {
   pub custom_media: bool,
 }
 
+impl RspackContentHash for Draft {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.custom_media.rspack_content_hash(state);
+  }
+}
+
 #[derive(Debug, Hash)]
 pub struct NonStandard {
   pub deep_selector_combinator: bool,
+}
+
+impl RspackContentHash for NonStandard {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.deep_selector_combinator.rspack_content_hash(state);
+  }
 }
 
 #[derive(Debug, Hash)]
@@ -55,6 +67,16 @@ pub struct PseudoClasses {
   pub focus: Option<String>,
   pub focus_visible: Option<String>,
   pub focus_within: Option<String>,
+}
+
+impl RspackContentHash for PseudoClasses {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.hover.rspack_content_hash(state);
+    self.active.rspack_content_hash(state);
+    self.focus.rspack_content_hash(state);
+    self.focus_visible.rspack_content_hash(state);
+    self.focus_within.rspack_content_hash(state);
+  }
 }
 
 #[derive(Debug)]
@@ -98,6 +120,39 @@ impl Hash for MinimizerOptions {
   }
 }
 
+impl RspackContentHash for MinimizerOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.error_recovery.rspack_content_hash(state);
+    self.include.rspack_content_hash(state);
+    self.exclude.rspack_content_hash(state);
+    self.drafts.rspack_content_hash(state);
+    self.non_standard.rspack_content_hash(state);
+    self.unused_symbols.rspack_content_hash(state);
+    self.pseudo_classes.rspack_content_hash(state);
+    if let Some(targets) = &self.targets {
+      targets.android.rspack_content_hash(state);
+      targets.chrome.rspack_content_hash(state);
+      targets.edge.rspack_content_hash(state);
+      targets.firefox.rspack_content_hash(state);
+      targets.ie.rspack_content_hash(state);
+      targets.ios_saf.rspack_content_hash(state);
+      targets.opera.rspack_content_hash(state);
+      targets.safari.rspack_content_hash(state);
+      targets.samsung.rspack_content_hash(state);
+    }
+  }
+}
+
+impl RspackContentHash for PluginOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.test.rspack_content_hash(state);
+    self.include.rspack_content_hash(state);
+    self.exclude.rspack_content_hash(state);
+    self.remove_unused_local_idents.rspack_content_hash(state);
+    self.minimizer_options.rspack_content_hash(state);
+  }
+}
+
 #[plugin]
 #[derive(Debug)]
 pub struct LightningCssMinimizerRspackPlugin {
@@ -117,7 +172,7 @@ async fn chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  self.options.hash(hasher);
+  hasher.update(&self.options);
   Ok(())
 }
 

@@ -5,7 +5,7 @@ use rspack_core::{
   DependencyType, ExportNameOrSpec, ExportSpec, ExportsInfoArtifact, ExportsOfExportsSpec,
   ExportsSpec, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_util::ext::DynHash;
+use rspack_hash::RspackHash;
 
 use crate::utils::{escape_css, replace_css_module_id_placeholder};
 
@@ -82,11 +82,11 @@ impl DependencyCodeGeneration for CssLocalIdentDependency {
 
   fn update_hash(
     &self,
-    hasher: &mut dyn std::hash::Hasher,
+    hasher: &mut RspackHash,
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    self.local_ident.dyn_hash(hasher);
+    hasher.update(&self.local_ident);
   }
 }
 

@@ -404,7 +404,9 @@ impl Module for RscEntryModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    module_update_hash(self, &mut hasher, compilation, runtime);
+    {
+      module_update_hash(self, &mut hasher, compilation, runtime);
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 }

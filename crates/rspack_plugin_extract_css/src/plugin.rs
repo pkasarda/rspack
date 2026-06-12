@@ -1,6 +1,5 @@
 use std::{
   borrow::Cow,
-  hash::Hash,
   sync::{Arc, LazyLock},
 };
 
@@ -630,12 +629,12 @@ async fn content_hash(
   used_modules
     .iter()
     .map(|m| ChunkGraph::get_module_hash(compilation, m.identifier(), chunk.runtime()))
-    .for_each(|current| current.hash(hasher));
+    .for_each(|current| hasher.update(&current));
 
-  " ".hash(hasher);
+  hasher.update(" ");
   if let Some(diagnostics) = diagnostics {
     diagnostics.iter().for_each(|curr| {
-      curr.fallback_module.hash(hasher);
+      hasher.update(curr.fallback_module.as_str());
     });
   }
 

@@ -1,7 +1,4 @@
-use std::{
-  hash::Hash,
-  sync::{Arc, LazyLock},
-};
+use std::sync::{Arc, LazyLock};
 
 use atomic_refcell::AtomicRefCell;
 use rspack_core::{
@@ -130,7 +127,7 @@ async fn js_chunk_hash(
     .get_chunk_runtime_modules_iterable(chunk_ukey)
   {
     if let Some(hash) = compilation.runtime_modules_hash.get(identifier) {
-      hash.hash(hasher);
+      hasher.update(hash);
     }
   }
   Ok(())

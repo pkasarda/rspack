@@ -2,7 +2,6 @@ use std::{
   any::Any,
   borrow::Cow,
   fmt::{Debug, Display, Formatter},
-  hash::Hash,
   sync::Arc,
 };
 
@@ -15,12 +14,12 @@ use rspack_cacheable::{
 use rspack_collections::{Identifiable, Identifier, IdentifierMap, IdentifierSet};
 use rspack_error::{Diagnosable, Result};
 use rspack_fs::ReadableFileSystem;
-use rspack_hash::RspackHashDigest;
+use rspack_hash::{RspackContentHash, RspackHash, RspackHashDigest};
 use rspack_paths::ArcPathSet;
 use rspack_sources::BoxSource;
 use rspack_util::{
   atom::Atom,
-  ext::{AsAny, DynHash},
+  ext::AsAny,
   fx_hash::{FxIndexMap, FxIndexSet},
   source_map::ModuleSourceMapConfig,
 };
@@ -415,6 +414,73 @@ pub struct BuildMeta {
   pub side_effect_free: Option<bool>,
 }
 
+impl RspackContentHash for BuildMetaExportsType {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      BuildMetaExportsType::Unset => "unset",
+      BuildMetaExportsType::Default => "default",
+      BuildMetaExportsType::Namespace => "namespace",
+      BuildMetaExportsType::Flagged => "flagged",
+      BuildMetaExportsType::Dynamic => "dynamic",
+    }
+    .rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for ExportsType {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      ExportsType::DefaultOnly => "default-only",
+      ExportsType::Namespace => "namespace",
+      ExportsType::DefaultWithNamed => "default-with-named",
+      ExportsType::Dynamic => "dynamic",
+    }
+    .rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for BuildMetaDefaultObject {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      BuildMetaDefaultObject::False => "false",
+      BuildMetaDefaultObject::Redirect => "redirect",
+      BuildMetaDefaultObject::RedirectWarn => "redirect-warn",
+    }
+    .rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for ModuleArgument {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      ModuleArgument::Module => "module",
+      ModuleArgument::RspackModule => "__webpack_module__",
+    }
+    .rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for ExportsArgument {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      ExportsArgument::Exports => "exports",
+      ExportsArgument::RspackExports => "__webpack_exports__",
+    }
+    .rspack_content_hash(state);
+  }
+}
+
+impl RspackContentHash for BuildMeta {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.strict_esm_module.rspack_content_hash(state);
+    self.has_top_level_await.rspack_content_hash(state);
+    self.esm.rspack_content_hash(state);
+    self.exports_type.rspack_content_hash(state);
+    self.default_object.rspack_content_hash(state);
+    self.side_effect_free.rspack_content_hash(state);
+  }
+}
+
 // webpack build info
 #[derive(Debug)]
 pub struct BuildResult {
@@ -728,14 +794,12 @@ fn get_exports_type_impl(
 
 pub fn module_update_hash(
   module: &dyn Module,
-  hasher: &mut dyn std::hash::Hasher,
+  hasher: &mut RspackHash,
   compilation: &Compilation,
   runtime: Option<&RuntimeSpec>,
 ) {
   let chunk_graph = &compilation.build_chunk_graph_artifact.chunk_graph;
-  chunk_graph
-    .get_module_graph_hash(module, compilation, runtime)
-    .dyn_hash(hasher);
+  hasher.update(&chunk_graph.get_module_graph_hash(module, compilation, runtime));
   if let Some(deps) = module.get_presentational_dependencies() {
     for dep in deps {
       dep.update_hash(hasher, compilation, runtime);

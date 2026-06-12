@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fmt::Debug, hash::Hash};
+use std::{cmp::Ordering, fmt::Debug};
 
 use itertools::Itertools;
 use rayon::prelude::*;
@@ -735,7 +735,7 @@ impl Chunk {
   }
 
   pub fn update_hash(&self, hasher: &mut RspackHash, compilation: &Compilation) {
-    self.id().hash(hasher);
+    hasher.update(&self.id());
     let runtime_modules = compilation
       .build_chunk_graph_artifact
       .chunk_graph
@@ -755,7 +755,7 @@ impl Chunk {
         .code_generation_results
         .get_hash(&module_identifier, Some(&self.runtime))
       {
-        hash.hash(hasher);
+        hasher.update(hash);
       }
     }
 
@@ -772,22 +772,25 @@ impl Chunk {
             "Runtime module ({runtime_module_identifier}) should have hash result when updating chunk hash."
           );
         });
-      hash.hash(hasher);
+      hasher.update(hash);
     }
 
-    "entry".hash(hasher);
+    hasher.update("entry");
     for (module, chunk_group) in compilation
       .build_chunk_graph_artifact
       .chunk_graph
       .get_chunk_entry_modules_with_chunk_group_iterable(&self.ukey)
     {
-      ChunkGraph::get_module_id(&compilation.module_ids_artifact, *module).hash(hasher);
+      hasher.update(&ChunkGraph::get_module_id(
+        &compilation.module_ids_artifact,
+        *module,
+      ));
       if let Some(chunk_group) = compilation
         .build_chunk_graph_artifact
         .chunk_group_by_ukey
         .get(chunk_group)
       {
-        chunk_group.id(compilation).hash(hasher);
+        hasher.update(&chunk_group.id(compilation));
       }
     }
   }

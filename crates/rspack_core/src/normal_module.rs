@@ -1,6 +1,5 @@
 use std::{
   borrow::Cow,
-  hash::Hash,
   sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -22,10 +21,7 @@ use rspack_sources::{
   BoxSource, CachedSource, OriginalSource, RawBufferSource, RawStringSource, SourceExt, SourceMap,
   SourceMapSource, WithoutOriginalOptions,
 };
-use rspack_util::{
-  ext::DynHash,
-  source_map::{ModuleSourceMapConfig, SourceMapKind},
-};
+use rspack_util::source_map::{ModuleSourceMapConfig, SourceMapKind};
 use serde_json::json;
 use tracing::{Instrument, info_span};
 
@@ -296,14 +292,14 @@ impl NormalModule {
     build_meta: &BuildMeta,
   ) -> RspackHashDigest {
     let mut hasher = RspackHash::from(output_options);
-    "source".hash(&mut hasher);
+    hasher.update("source");
     if let Some(error) = self.first_error() {
-      error.message.hash(&mut hasher);
+      hasher.update(&error.message);
     } else if let Some(s) = &self.source {
-      s.hash(&mut hasher);
+      hasher.write(s.source().as_bytes());
     }
-    "meta".hash(&mut hasher);
-    build_meta.hash(&mut hasher);
+    hasher.update("meta");
+    hasher.update(build_meta);
     hasher.digest(&output_options.hash_digest)
   }
 
@@ -689,16 +685,20 @@ impl Module for NormalModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    self.build_info.hash.dyn_hash(&mut hasher);
+    {
+      hasher.update(&self.build_info.hash);
+    }
     // For built failed NormalModule, hash will be calculated by build_info.hash, which contains error message
     if self.source.is_some() {
-      self
+      let runtime_hash = self
         .parser_and_generator
         .get_runtime_hash(self, compilation, runtime)
-        .await?
-        .dyn_hash(&mut hasher);
+        .await?;
+      hasher.update(&runtime_hash);
     }
-    module_update_hash(self, &mut hasher, compilation, runtime);
+    {
+      module_update_hash(self, &mut hasher, compilation, runtime);
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 

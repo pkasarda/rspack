@@ -1,7 +1,4 @@
-use std::{
-  hash::{Hash, Hasher},
-  sync::Arc,
-};
+use std::{hash::Hasher, sync::Arc};
 
 use rspack_collections::{IdentifierMap, IdentifierSet};
 use rspack_core::{Compilation, Module, ModuleGraph, RscModuleType};
@@ -86,7 +83,7 @@ fn collect_changed_server_components(
       return;
     };
     let mut hasher = FxHasher::default();
-    source.hash(&mut hasher);
+    hasher.write(source.source().as_bytes());
     let cur_hash = hasher.finish();
     if prev_server_component_hashes
       .get(&module_identifier)

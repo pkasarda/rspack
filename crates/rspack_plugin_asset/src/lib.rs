@@ -1,4 +1,4 @@
-use std::{borrow::Cow, hash::Hasher, path::PathBuf};
+use std::{borrow::Cow, path::PathBuf};
 
 use asset_exports_dependency::AssetExportsDependency;
 use rayon::prelude::*;
@@ -17,7 +17,7 @@ use rspack_core::{
 use rspack_error::{Diagnostic, IntoTWithDiagnosticArray, Result, error};
 use rspack_hash::{RspackHash, RspackHashDigest};
 use rspack_hook::{plugin, plugin_hook};
-use rspack_util::{base64, ext::DynHash, fx_hash::FxHashSet, identifier::make_paths_relative};
+use rspack_util::{base64, fx_hash::FxHashSet, identifier::make_paths_relative};
 
 mod asset_exports_dependency;
 
@@ -116,7 +116,9 @@ impl AssetParserAndGenerator {
     compiler_options: &CompilerOptions,
   ) -> RspackHashDigest {
     let mut hasher = RspackHash::from(&compiler_options.output);
-    hasher.write(&source.buffer());
+    {
+      hasher.write(&source.buffer());
+    }
     hasher.digest(&compiler_options.output.hash_digest)
   }
 
@@ -772,7 +774,7 @@ impl ParserAndGenerator for AssetParserAndGenerator {
       && let Some(AssetGeneratorDataUrl::Options(data_url_options)) =
         module_generator_options.and_then(|x| x.asset_data_url())
     {
-      data_url_options.dyn_hash(&mut hasher);
+      hasher.update(data_url_options);
     } else if parsed_asset_config.is_resource() {
       let source_file_name = self.get_source_file_name(module, compilation);
       let (filename, _, _) = self
@@ -785,18 +787,24 @@ impl ParserAndGenerator for AssetParserAndGenerator {
           false,
         )
         .await?;
-      filename.dyn_hash(&mut hasher);
+      {
+        hasher.update(&filename);
+      }
       match module_generator_options.and_then(|x| x.asset_public_path()) {
         Some(public_path) => match public_path {
           PublicPath::Filename(template) => {
             let (public_path, _) = self
               .get_public_path(module, compilation, None, &source_file_name, template)
               .await?;
-            public_path.dyn_hash(&mut hasher);
+            hasher.update(&public_path);
           }
-          PublicPath::Auto => "auto".dyn_hash(&mut hasher),
+          PublicPath::Auto => {
+            hasher.update("auto");
+          }
         },
-        None => "no-path".dyn_hash(&mut hasher),
+        None => {
+          hasher.update("no-path");
+        }
       };
     }
     Ok(hasher.digest(&compilation.options.output.hash_digest))

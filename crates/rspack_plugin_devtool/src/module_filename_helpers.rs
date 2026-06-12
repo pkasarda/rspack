@@ -1,9 +1,4 @@
-use std::{
-  borrow::Cow,
-  cell::OnceCell,
-  hash::{Hash, Hasher},
-  path::Path,
-};
+use std::{borrow::Cow, cell::OnceCell, path::Path};
 
 use cow_utils::CowUtils;
 use rspack_core::{ChunkGraph, Compilation, OutputOptions, contextify};
@@ -33,7 +28,7 @@ fn get_hash(text: &str, output_options: &OutputOptions) -> String {
     ..
   } = output_options;
   let mut hasher = RspackHash::with_salt(hash_function, hash_salt);
-  text.as_bytes().hash(&mut hasher);
+  hasher.write(text.as_bytes());
   let mut buf = format!("{:x}", hasher.finish());
   buf.truncate(4);
   buf

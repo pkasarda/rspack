@@ -7,6 +7,7 @@ use itertools::Itertools;
 use rspack_cacheable::cacheable;
 use rspack_collections::IdentifierMap;
 use rspack_error::{Result, error};
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_util::fx_hash::FxIndexSet;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};
 
@@ -441,6 +442,15 @@ impl EntryRuntime {
   }
 }
 
+impl RspackContentHash for EntryRuntime {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      EntryRuntime::String(s) => s.rspack_content_hash(state),
+      EntryRuntime::False => "false".rspack_content_hash(state),
+    }
+  }
+}
+
 // pub type EntryRuntime = String;
 #[cacheable]
 #[derive(Debug, Default, Clone, Hash, PartialEq, Eq)]
@@ -500,6 +510,22 @@ impl EntryOptions {
   }
 }
 
+impl RspackContentHash for EntryOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.name.rspack_content_hash(state);
+    self.runtime.rspack_content_hash(state);
+    self.chunk_loading.rspack_content_hash(state);
+    self.wasm_loading.rspack_content_hash(state);
+    self.async_chunks.rspack_content_hash(state);
+    self.public_path.rspack_content_hash(state);
+    self.base_uri.rspack_content_hash(state);
+    self.filename.rspack_content_hash(state);
+    self.library.rspack_content_hash(state);
+    self.depend_on.rspack_content_hash(state);
+    self.layer.rspack_content_hash(state);
+  }
+}
+
 #[derive(Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ChunkGroupOrderKey {
   Preload,
@@ -544,11 +570,35 @@ impl ChunkGroupOptions {
   }
 }
 
+impl RspackContentHash for ChunkGroupOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.name.rspack_content_hash(state);
+    self.preload_order.rspack_content_hash(state);
+    self.prefetch_order.rspack_content_hash(state);
+    self.fetch_priority.rspack_content_hash(state);
+  }
+}
+
 #[cacheable]
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum GroupOptions {
   Entrypoint(Box<EntryOptions>),
   ChunkGroup(ChunkGroupOptions),
+}
+
+impl RspackContentHash for GroupOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      GroupOptions::Entrypoint(options) => {
+        "entrypoint".rspack_content_hash(state);
+        options.rspack_content_hash(state);
+      }
+      GroupOptions::ChunkGroup(options) => {
+        "chunk-group".rspack_content_hash(state);
+        options.rspack_content_hash(state);
+      }
+    }
+  }
 }
 
 impl GroupOptions {

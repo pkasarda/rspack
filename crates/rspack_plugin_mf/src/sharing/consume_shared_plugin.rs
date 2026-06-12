@@ -13,6 +13,7 @@ use rspack_core::{
   RuntimeGlobals, RuntimeModule,
 };
 use rspack_error::{Diagnostic, Result, error};
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rustc_hash::FxHashMap;
 
@@ -37,11 +38,35 @@ pub struct ConsumeOptions {
   pub tree_shaking_mode: Option<String>,
 }
 
+impl RspackContentHash for ConsumeOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.import.rspack_content_hash(state);
+    self.import_resolved.rspack_content_hash(state);
+    self.share_key.rspack_content_hash(state);
+    self.share_scope.rspack_content_hash(state);
+    self.required_version.rspack_content_hash(state);
+    self.package_name.rspack_content_hash(state);
+    self.strict_version.rspack_content_hash(state);
+    self.singleton.rspack_content_hash(state);
+    self.eager.rspack_content_hash(state);
+    self.tree_shaking_mode.rspack_content_hash(state);
+  }
+}
+
 #[cacheable]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ConsumeVersion {
   Version(String),
   False,
+}
+
+impl RspackContentHash for ConsumeVersion {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      ConsumeVersion::Version(version) => version.rspack_content_hash(state),
+      ConsumeVersion::False => "false".rspack_content_hash(state),
+    }
+  }
 }
 
 impl fmt::Display for ConsumeVersion {

@@ -15,7 +15,8 @@ use rspack_core::{
   create_exports_object_referenced, property_access, to_normal_comment,
 };
 use rspack_error::Diagnostic;
-use rspack_util::{ext::DynHash, json_stringify_str};
+use rspack_hash::RspackHash;
+use rspack_util::json_stringify_str;
 use swc_atoms::Atom;
 
 use super::{
@@ -371,7 +372,7 @@ impl AsContextDependency for ESMImportSpecifierDependency {}
 impl DependencyCodeGeneration for ESMImportSpecifierDependency {
   fn update_hash(
     &self,
-    hasher: &mut dyn std::hash::Hasher,
+    hasher: &mut RspackHash,
     compilation: &rspack_core::Compilation,
     runtime: Option<&RuntimeSpec>,
   ) {
@@ -392,8 +393,8 @@ impl DependencyCodeGeneration for ESMImportSpecifierDependency {
     if let Some(UsedName::Inlined(inlined)) =
       exports_info.get_used_name(&compilation.exports_info_artifact, runtime, ids)
     {
-      ids.dyn_hash(hasher);
-      inlined.dyn_hash(hasher);
+      hasher.update(&ids);
+      hasher.update(&inlined);
     }
   }
 

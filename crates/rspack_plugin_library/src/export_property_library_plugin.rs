@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use rspack_core::{
   AsyncModulesArtifact, CanInlineUse, ChunkUkey, Compilation,
   CompilationAdditionalChunkRuntimeRequirements, CompilationFinishModules, CompilationParams,
@@ -106,7 +104,7 @@ async fn js_chunk_hash(
     return Ok(());
   };
   if let Some(export) = &options.export {
-    export.hash(hasher);
+    hasher.update(export);
   }
   Ok(())
 }

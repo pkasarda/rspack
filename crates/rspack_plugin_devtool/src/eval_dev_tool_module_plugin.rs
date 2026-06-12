@@ -1,4 +1,4 @@
-use std::{borrow::Cow, hash::Hash};
+use std::borrow::Cow;
 
 use cow_utils::CowUtils;
 use derive_more::Debug;
@@ -185,7 +185,7 @@ async fn js_chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  EVAL_DEV_TOOL_MODULE_PLUGIN_NAME.hash(hasher);
+  hasher.update(EVAL_DEV_TOOL_MODULE_PLUGIN_NAME);
   Ok(())
 }
 

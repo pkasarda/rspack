@@ -1,4 +1,4 @@
-use std::{hash::Hash, sync::Arc};
+use std::sync::Arc;
 
 use rspack_core::{
   AssetInfo, CachedConstDependencyTemplate, ChunkGraph, ChunkKind, ChunkUkey, Compilation,
@@ -496,12 +496,12 @@ async fn content_hash(
     .build_chunk_graph_artifact
     .chunk_by_ukey
     .expect_get(chunk_ukey);
-  let mut hasher = hashes
+  let hasher = hashes
     .entry(SourceType::JavaScript)
     .or_insert_with(|| RspackHash::from(&compilation.options.output));
 
   if !chunk.has_runtime(&compilation.build_chunk_graph_artifact.chunk_group_by_ukey) {
-    chunk.id().hash(&mut hasher);
+    hasher.update(&chunk.id());
   }
 
   let module_graph = compilation.get_module_graph();
@@ -524,8 +524,8 @@ async fn content_hash(
     })
     .for_each(|(current, id)| {
       if let Some(current) = current {
-        current.hash(&mut hasher);
-        id.hash(&mut hasher);
+        hasher.update(current);
+        hasher.update(&id);
       }
     });
 
@@ -538,7 +538,7 @@ async fn content_hash(
       .runtime_modules_hash
       .get(runtime_module_identifier)
     {
-      hash.hash(&mut hasher);
+      hasher.update(hash);
     }
   }
 

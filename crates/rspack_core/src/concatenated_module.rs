@@ -2,7 +2,6 @@ use std::{
   borrow::Cow,
   collections::{BTreeMap, VecDeque},
   fmt::Debug,
-  hash::Hasher,
   mem,
   sync::{Arc, LazyLock},
 };
@@ -21,7 +20,6 @@ use rspack_sources::{
 };
 use rspack_util::{
   SpanExt,
-  ext::DynHash,
   fx_hash::{FxIndexMap, FxIndexSet},
   itoa, json_stringify, json_stringify_str,
   source_map::SourceMapKind,
@@ -2064,10 +2062,12 @@ impl Module for ConcatenatedModule {
     .collect::<Result<Vec<_>>>()?;
 
     for hash in hashes {
-      (hash?).dyn_hash(&mut hasher);
+      hasher.update(&hash?);
     }
 
-    module_update_hash(self, &mut hasher, compilation, generation_runtime);
+    {
+      module_update_hash(self, &mut hasher, compilation, generation_runtime);
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 

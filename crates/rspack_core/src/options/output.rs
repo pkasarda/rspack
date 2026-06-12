@@ -9,8 +9,8 @@ use std::{
 
 use regex::Regex;
 use rspack_cacheable::cacheable;
-use rspack_hash::RspackHash;
 pub use rspack_hash::{HashDigest, HashFunction, HashSalt};
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_macros::MergeFrom;
 use rspack_paths::Utf8PathBuf;
 #[cfg(allocative)]
@@ -125,6 +125,12 @@ impl ChunkLoading {
   }
 }
 
+impl RspackContentHash for ChunkLoading {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_str().rspack_content_hash(state);
+  }
+}
+
 #[cacheable]
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ChunkLoadingType {
@@ -168,11 +174,26 @@ impl ChunkLoadingType {
   }
 }
 
+impl RspackContentHash for ChunkLoadingType {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.as_str().rspack_content_hash(state);
+  }
+}
+
 #[cacheable]
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum WasmLoading {
   Enable(WasmLoadingType),
   Disable,
+}
+
+impl RspackContentHash for WasmLoading {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      WasmLoading::Enable(ty) => ty.rspack_content_hash(state),
+      WasmLoading::Disable => "false".rspack_content_hash(state),
+    }
+  }
 }
 
 impl From<&str> for WasmLoading {
@@ -190,6 +211,17 @@ pub enum WasmLoadingType {
   Fetch,
   AsyncNode,
   Universal,
+}
+
+impl RspackContentHash for WasmLoadingType {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      WasmLoadingType::Fetch => "fetch",
+      WasmLoadingType::AsyncNode => "async-node",
+      WasmLoadingType::Universal => "universal",
+    }
+    .rspack_content_hash(state);
+  }
 }
 
 impl From<&str> for WasmLoadingType {
@@ -333,6 +365,15 @@ impl<'a> PathData<'a> {
 pub enum PublicPath {
   Filename(Filename),
   Auto,
+}
+
+impl RspackContentHash for PublicPath {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      PublicPath::Filename(filename) => filename.rspack_content_hash(state),
+      PublicPath::Auto => "auto".rspack_content_hash(state),
+    }
+  }
 }
 
 //https://github.com/webpack/webpack/blob/001cab14692eb9a833c6b56709edbab547e291a1/lib/util/identifier.js#L378
@@ -486,6 +527,17 @@ pub struct LibraryOptions {
   pub amd_container: Option<String>,
 }
 
+impl RspackContentHash for LibraryOptions {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.name.rspack_content_hash(state);
+    self.export.rspack_content_hash(state);
+    self.library_type.rspack_content_hash(state);
+    self.umd_named_define.rspack_content_hash(state);
+    self.auxiliary_comment.rspack_content_hash(state);
+    self.amd_container.rspack_content_hash(state);
+  }
+}
+
 pub type LibraryType = String;
 
 pub type LibraryExport = Vec<String>;
@@ -499,11 +551,29 @@ pub struct LibraryAuxiliaryComment {
   pub amd: Option<String>,
 }
 
+impl RspackContentHash for LibraryAuxiliaryComment {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.root.rspack_content_hash(state);
+    self.commonjs.rspack_content_hash(state);
+    self.commonjs2.rspack_content_hash(state);
+    self.amd.rspack_content_hash(state);
+  }
+}
+
 #[cacheable]
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LibraryName {
   NonUmdObject(LibraryNonUmdObject),
   UmdObject(LibraryCustomUmdObject),
+}
+
+impl RspackContentHash for LibraryName {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      LibraryName::NonUmdObject(value) => value.rspack_content_hash(state),
+      LibraryName::UmdObject(value) => value.rspack_content_hash(state),
+    }
+  }
 }
 
 #[cacheable]
@@ -513,12 +583,29 @@ pub enum LibraryNonUmdObject {
   String(String),
 }
 
+impl RspackContentHash for LibraryNonUmdObject {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      LibraryNonUmdObject::Array(value) => value.rspack_content_hash(state),
+      LibraryNonUmdObject::String(value) => value.rspack_content_hash(state),
+    }
+  }
+}
+
 #[cacheable]
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LibraryCustomUmdObject {
   pub amd: Option<String>,
   pub commonjs: Option<String>,
   pub root: Option<Vec<String>>,
+}
+
+impl RspackContentHash for LibraryCustomUmdObject {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.amd.rspack_content_hash(state);
+    self.commonjs.rspack_content_hash(state);
+    self.root.rspack_content_hash(state);
+  }
 }
 
 #[derive(Debug, Default, Copy, Clone)]

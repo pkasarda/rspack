@@ -5,6 +5,7 @@ use rspack_cacheable::{
   cacheable,
   with::{AsPreset, AsVec},
 };
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_util::{atom::Atom, json_stringify, ryu_js};
 use rustc_hash::FxHashSet as HashSet;
 
@@ -57,6 +58,12 @@ impl Hash for EvaluatedInlinableValue {
       }
       _ => {}
     }
+  }
+}
+
+impl RspackContentHash for EvaluatedInlinableValue {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.render("").rspack_content_hash(state);
   }
 }
 
@@ -115,10 +122,26 @@ pub enum UsedNameItem {
   Inlined(EvaluatedInlinableValue),
 }
 
+impl RspackContentHash for UsedNameItem {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      UsedNameItem::Str(value) => value.rspack_content_hash(state),
+      UsedNameItem::Inlined(value) => value.rspack_content_hash(state),
+    }
+  }
+}
+
 #[derive(Debug, Clone, Hash)]
 pub struct InlinedUsedName {
   value: EvaluatedInlinableValue,
   suffix: Vec<Atom>,
+}
+
+impl RspackContentHash for InlinedUsedName {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.value.rspack_content_hash(state);
+    self.suffix.rspack_content_hash(state);
+  }
 }
 
 impl InlinedUsedName {
@@ -169,6 +192,17 @@ pub enum ExportProvided {
   Unknown,
 }
 
+impl RspackContentHash for ExportProvided {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      ExportProvided::Provided => "provided",
+      ExportProvided::NotProvided => "not-provided",
+      ExportProvided::Unknown => "unknown",
+    }
+    .rspack_content_hash(state);
+  }
+}
+
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
 pub struct UsageKey(pub Vec<Either<Box<UsageKey>, UsageState>>);
 
@@ -186,6 +220,19 @@ pub enum UsageState {
   #[default]
   Unknown = 3,
   Used = 4,
+}
+
+impl RspackContentHash for UsageState {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    match self {
+      UsageState::Unused => "unused",
+      UsageState::OnlyPropertiesUsed => "only-properties-used",
+      UsageState::NoInfo => "no-info",
+      UsageState::Unknown => "unknown",
+      UsageState::Used => "used",
+    }
+    .rspack_content_hash(state);
+  }
 }
 
 #[cacheable]

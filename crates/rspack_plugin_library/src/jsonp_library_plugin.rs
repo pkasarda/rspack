@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use rspack_core::{
   ChunkUkey, Compilation, CompilationAdditionalChunkRuntimeRequirements, CompilationParams,
   CompilerCompilation, Filename, LibraryName, LibraryNonUmdObject, LibraryOptions, LibraryType,
@@ -119,8 +117,8 @@ async fn js_chunk_hash(
   let Some(options) = self.get_options_for_chunk(compilation, chunk_ukey)? else {
     return Ok(());
   };
-  PLUGIN_NAME.hash(hasher);
-  options.name.hash(hasher);
+  hasher.update(PLUGIN_NAME);
+  hasher.update(&options.name);
   Ok(())
 }
 

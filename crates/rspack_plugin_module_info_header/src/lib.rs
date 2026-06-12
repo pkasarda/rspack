@@ -1,4 +1,4 @@
-use std::{borrow::Cow, hash::Hash};
+use std::borrow::Cow;
 
 use rspack_cacheable::with::AsVecConverter;
 use rspack_core::{
@@ -204,8 +204,8 @@ async fn chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  "ModuleInfoHeaderPlugin".hash(hasher);
-  "1".hash(hasher);
+  hasher.update("ModuleInfoHeaderPlugin");
+  hasher.update("1");
 
   Ok(())
 }

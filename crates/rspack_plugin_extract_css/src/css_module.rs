@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_collections::{Identifiable, Identifier};
 use rspack_core::{
@@ -11,7 +9,7 @@ use rspack_core::{
 };
 use rspack_error::{Result, impl_empty_diagnosable_trait};
 use rspack_hash::{RspackHash, RspackHashDigest};
-use rspack_util::{ext::DynHash, itoa};
+use rspack_util::itoa;
 
 use crate::{
   css_dependency::CssDependency,
@@ -86,14 +84,13 @@ impl CssModule {
 
   fn compute_hash(&self, options: &CompilerOptions) -> RspackHashDigest {
     let mut hasher = RspackHash::from(&options.output);
-
-    self.content.hash(&mut hasher);
-    if let Some(layer) = &self.css_layer {
-      layer.hash(&mut hasher);
+    {
+      hasher.update(&self.content);
+      hasher.update(&self.css_layer);
+      hasher.update(&self.supports);
+      hasher.update(&self.media);
+      hasher.update(&self.source_map);
     }
-    self.supports.hash(&mut hasher);
-    self.media.hash(&mut hasher);
-    self.source_map.hash(&mut hasher);
 
     hasher.digest(&options.output.hash_digest)
   }
@@ -194,8 +191,10 @@ impl Module for CssModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    module_update_hash(self, &mut hasher, compilation, runtime);
-    self.build_info.hash.dyn_hash(&mut hasher);
+    {
+      module_update_hash(self, &mut hasher, compilation, runtime);
+      hasher.update(&self.build_info.hash);
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 

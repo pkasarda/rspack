@@ -1,7 +1,6 @@
 use std::{
   borrow::Cow,
   fmt::Display,
-  hash::Hash,
   ops::DerefMut,
   path::{MAIN_SEPARATOR, Path, PathBuf},
   sync::{Arc, LazyLock, Mutex},
@@ -152,7 +151,7 @@ impl CopyRspackPlugin {
     salt: &HashSalt,
   ) -> RspackHashDigest {
     let mut hasher = RspackHash::with_salt(function, salt);
-    source.buffer().hash(&mut hasher);
+    hasher.write(&source.buffer());
     hasher.digest(digest)
   }
 

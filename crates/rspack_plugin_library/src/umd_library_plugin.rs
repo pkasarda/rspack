@@ -1,4 +1,4 @@
-use std::{borrow::Cow, hash::Hash};
+use std::borrow::Cow;
 
 use rspack_core::{
   Chunk, ChunkUkey, Compilation, CompilationAdditionalChunkRuntimeRequirements, CompilationParams,
@@ -334,8 +334,8 @@ async fn js_chunk_hash(
   let Some(_) = self.get_options_for_chunk(compilation, chunk_ukey) else {
     return Ok(());
   };
-  PLUGIN_NAME.hash(hasher);
-  compilation.options.output.library.hash(hasher);
+  hasher.update(PLUGIN_NAME);
+  hasher.update(&compilation.options.output.library);
   Ok(())
 }
 

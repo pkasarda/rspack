@@ -1,7 +1,6 @@
 use std::{
   borrow::Cow,
   collections::hash_map::Entry,
-  hash::Hash,
   ops::Deref,
   sync::{Arc, LazyLock, RwLock as SyncRwLock},
 };
@@ -1454,9 +1453,9 @@ var {} = {{}};
       startup,
       allow_inline_startup,
     } = Self::render_bootstrap(chunk_ukey, compilation, &runtime_template).await?;
-    header.hash(hasher);
-    startup.hash(hasher);
-    allow_inline_startup.hash(hasher);
+    hasher.update(&header);
+    hasher.update(&startup);
+    hasher.update(&allow_inline_startup);
     Ok(())
   }
 }

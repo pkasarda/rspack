@@ -11,6 +11,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use rspack_cacheable::{cacheable, with::AsPreset};
 use rspack_collections::{IdentifierHasher, IdentifierLinkedMap, IdentifierMap, IdentifierSet};
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_util::fx_hash::FxIndexSet;
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Serialize, Serializer};
@@ -78,6 +79,12 @@ impl ChunkId {
 
   pub fn as_str(&self) -> &str {
     self.0.as_str()
+  }
+}
+
+impl RspackContentHash for ChunkId {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    self.0.as_str().rspack_content_hash(state);
   }
 }
 

@@ -1,5 +1,3 @@
-use std::hash::Hasher;
-
 use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest};
 
 #[test]

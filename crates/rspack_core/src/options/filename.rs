@@ -12,6 +12,7 @@ use rspack_cacheable::{
   with::{AsPreset, Unsupported},
 };
 use rspack_error::ToStringResultToRspackResultExt;
+use rspack_hash::{RspackContentHash, RspackHash};
 use rspack_paths::Utf8PathBuf;
 use rspack_util::{MergeFrom, atom::Atom, base64, ext::CowExt};
 
@@ -85,6 +86,14 @@ impl Filename {
       }
     };
     Ok(render_template(template, options, asset_info))
+  }
+}
+
+impl RspackContentHash for Filename {
+  fn rspack_content_hash(&self, state: &mut RspackHash) {
+    if let FilenameKind::Template(template) = &self.0 {
+      template.rspack_content_hash(state);
+    }
   }
 }
 

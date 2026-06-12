@@ -15,7 +15,6 @@ use rspack_error::{Result, impl_empty_diagnosable_trait};
 use rspack_hash::{RspackHash, RspackHashDigest};
 use rspack_plugin_javascript::dependency::CommonJsRequireDependency;
 use rspack_util::{
-  ext::DynHash,
   json_stringify,
   source_map::{ModuleSourceMapConfig, SourceMapKind},
 };
@@ -334,9 +333,11 @@ impl Module for LazyCompilationProxyModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    module_update_hash(self, &mut hasher, compilation, runtime);
-    self.active.dyn_hash(&mut hasher);
-    self.identifier.dyn_hash(&mut hasher);
+    {
+      module_update_hash(self, &mut hasher, compilation, runtime);
+      hasher.update(&self.active);
+      hasher.update(self.identifier.as_str());
+    }
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 }
