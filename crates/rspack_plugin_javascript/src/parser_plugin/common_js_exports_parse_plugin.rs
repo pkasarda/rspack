@@ -281,20 +281,29 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for CommonJsExportsParserPlugin {
 
     if for_name == "exports" {
       // exports.x = y;
-      return handle_assign_export(parser, assign_expr, remaining, ExportsBase::Exports);
+      if remaining.len() == 1 {
+        return handle_assign_export(parser, assign_expr, remaining, ExportsBase::Exports);
+      }
+      return None;
     }
     if for_name == "module" && matches!(remaining.first(), Some(first) if first == "exports") {
       // module.exports.x = y;
-      return handle_assign_export(
-        parser,
-        assign_expr,
-        &remaining[1..],
-        ExportsBase::ModuleExports,
-      );
+      if remaining.len() <= 2 {
+        return handle_assign_export(
+          parser,
+          assign_expr,
+          &remaining[1..],
+          ExportsBase::ModuleExports,
+        );
+      }
+      return None;
     }
     if for_name == "this" && parser.is_top_level_scope() {
       // this.x = y
-      return handle_assign_export(parser, assign_expr, remaining, ExportsBase::This);
+      if remaining.len() == 1 {
+        return handle_assign_export(parser, assign_expr, remaining, ExportsBase::This);
+      }
+      return None;
     }
     None
   }

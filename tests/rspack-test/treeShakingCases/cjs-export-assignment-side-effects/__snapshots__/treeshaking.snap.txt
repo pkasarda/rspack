@@ -20,12 +20,33 @@ __webpack_unused_export__ = console.log("keep side effect");
 "use strict";
 /* import */ var _impure_named_exports__rspack_import_0 = __webpack_require__("./impure-named-exports.js");
 /* import */ var _esm_exports_assignment__rspack_import_1 = __webpack_require__("./esm-exports-assignment.js");
+/* import */ var _nested_export_write__rspack_import_2 = __webpack_require__("./nested-export-write.js");
+
 
 
 
 
 
 console.log("entry");
+
+
+},
+"./nested-export-write.js"(module, exports) {
+exports.foo = {
+  set bar(value) {
+    console.log(value);
+  },
+};
+
+exports.foo.bar = "keep nested write side effect";
+
+module.exports.baz = {
+  set qux(value) {
+    console.log(value);
+  },
+};
+
+module.exports.baz.qux = "keep module nested write side effect";
 
 
 },
