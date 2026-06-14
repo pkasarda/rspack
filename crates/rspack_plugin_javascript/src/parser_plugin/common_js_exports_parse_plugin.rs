@@ -288,7 +288,7 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for CommonJsExportsParserPlugin {
       return None;
     }
     if for_name == "module" && matches!(remaining.first(), Some(first) if first == "exports") {
-      if remaining.len() == 1 {
+      if remaining.len() == 1 && parser.is_top_level_scope() {
         // module.exports = y;
         parser.module_exports_reassigned = true;
       }
