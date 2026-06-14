@@ -62,6 +62,7 @@ pub struct CommonJsExportsDependency {
   range: DependencyRange,
   value_range: Option<DependencyRange>,
   base: ExportsBase,
+  preserve_assignment: bool,
   #[cacheable(with=AsVec<AsPreset>)]
   names: Vec<Atom>,
 }
@@ -72,12 +73,14 @@ impl CommonJsExportsDependency {
     value_range: Option<DependencyRange>,
     base: ExportsBase,
     names: Vec<Atom>,
+    preserve_assignment: bool,
   ) -> Self {
     Self {
       id: DependencyId::new(),
       range,
       value_range,
       base,
+      preserve_assignment,
       names,
     }
   }
@@ -172,6 +175,10 @@ impl DependencyTemplate for CommonJsExportsDependencyTemplate {
       .expect(
         "CommonJsExportsDependencyTemplate should only be used for CommonJsExportsDependency",
       );
+
+    if dep.preserve_assignment {
+      return;
+    }
 
     let TemplateContext {
       compilation,

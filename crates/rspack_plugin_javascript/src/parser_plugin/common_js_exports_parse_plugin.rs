@@ -220,6 +220,7 @@ fn handle_assign_export(
     None,
     base,
     remaining.to_owned(),
+    base.is_module_exports() && parser.module_exports_reassigned,
   )));
   parser.walk_expression(&assign_expr.right);
   Some(true)
@@ -290,15 +291,9 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for CommonJsExportsParserPlugin {
       if remaining.len() == 1 {
         // module.exports = y;
         parser.module_exports_reassigned = true;
-        return handle_assign_export(
-          parser,
-          assign_expr,
-          &remaining[1..],
-          ExportsBase::ModuleExports,
-        );
       }
       // module.exports.x = y;
-      if remaining.len() == 2 && !parser.module_exports_reassigned {
+      if remaining.len() <= 2 {
         return handle_assign_export(
           parser,
           assign_expr,
@@ -373,6 +368,7 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for CommonJsExportsParserPlugin {
         Some(arg2.span().into()),
         base,
         vec![property.into()],
+        false,
       )));
 
       parser.walk_expression(arg2);
