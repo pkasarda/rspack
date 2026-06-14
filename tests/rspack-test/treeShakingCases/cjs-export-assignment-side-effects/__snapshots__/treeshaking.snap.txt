@@ -21,6 +21,9 @@ __webpack_unused_export__ = console.log("keep side effect");
 /* import */ var _impure_named_exports__rspack_import_0 = __webpack_require__("./impure-named-exports.js");
 /* import */ var _esm_exports_assignment__rspack_import_1 = __webpack_require__("./esm-exports-assignment.js");
 /* import */ var _nested_export_write__rspack_import_2 = __webpack_require__("./nested-export-write.js");
+/* import */ var _reassigned_module_exports_write__rspack_import_3 = __webpack_require__("./reassigned-module-exports-write.js");
+/* import */ var _reassigned_module_exports_write__rspack_import_3_default = /*#__PURE__*/__webpack_require__.n(_reassigned_module_exports_write__rspack_import_3);
+
 
 
 
@@ -47,6 +50,17 @@ module.exports.baz = {
 };
 
 module.exports.baz.qux = "keep module nested write side effect";
+
+
+},
+"./reassigned-module-exports-write.js"(module) {
+module.exports = {
+  set foo(value) {
+    console.log(value);
+  },
+};
+
+module.exports.foo = "keep reassigned module exports write side effect";
 
 
 },

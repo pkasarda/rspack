@@ -3,5 +3,6 @@ import "./pure-named-exports";
 import "./impure-named-exports";
 import "./esm-exports-assignment";
 import "./nested-export-write";
+import "./reassigned-module-exports-write";
 
 console.log("entry");

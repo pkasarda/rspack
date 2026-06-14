@@ -287,8 +287,18 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for CommonJsExportsParserPlugin {
       return None;
     }
     if for_name == "module" && matches!(remaining.first(), Some(first) if first == "exports") {
+      if remaining.len() == 1 {
+        // module.exports = y;
+        parser.module_exports_reassigned = true;
+        return handle_assign_export(
+          parser,
+          assign_expr,
+          &remaining[1..],
+          ExportsBase::ModuleExports,
+        );
+      }
       // module.exports.x = y;
-      if remaining.len() <= 2 {
+      if remaining.len() == 2 && !parser.module_exports_reassigned {
         return handle_assign_export(
           parser,
           assign_expr,
