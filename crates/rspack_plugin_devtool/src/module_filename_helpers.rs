@@ -3,7 +3,7 @@ use std::{borrow::Cow, cell::OnceCell, path::Path};
 use cow_utils::CowUtils;
 use rspack_core::{ChunkGraph, Compilation, OutputOptions, contextify};
 use rspack_error::Result;
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_paths::Utf8Path;
 use rustc_hash::FxHashMap as HashMap;
 use sugar_path::SugarPath;
@@ -28,7 +28,7 @@ fn get_hash(text: &str, output_options: &OutputOptions) -> String {
     ..
   } = output_options;
   let mut hasher = RspackHash::with_salt(hash_function, hash_salt);
-  hasher.write(text.as_bytes());
+  text.hash(&mut hasher);
   let mut buf = format!("{:x}", hasher.finish());
   buf.truncate(4);
   buf

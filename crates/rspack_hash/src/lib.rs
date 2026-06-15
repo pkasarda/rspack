@@ -11,6 +11,7 @@ use base64_simd::{AsOut, STANDARD, URL_SAFE_NO_PAD};
 use md4::Digest;
 use rspack_cacheable::{cacheable, with::AsPreset};
 use rspack_collections::Identifier;
+use rspack_sources::Source;
 use rspack_util::{
   MergeFrom,
   asset_condition::{AssetCondition, AssetConditions},
@@ -153,6 +154,12 @@ impl<T: RspackHashable + ?Sized> RspackHashable for &T {
 }
 
 impl<T: RspackHashable + ?Sized> RspackHashable for Box<T> {
+  fn hash(&self, state: &mut RspackHash) {
+    (**self).hash(state);
+  }
+}
+
+impl<T: RspackHashable + ?Sized> RspackHashable for Arc<T> {
   fn hash(&self, state: &mut RspackHash) {
     (**self).hash(state);
   }
@@ -308,6 +315,12 @@ impl RspackHashable for AssetConditions {
         value.hash(state);
       }
     }
+  }
+}
+
+impl RspackHashable for dyn Source {
+  fn hash(&self, state: &mut RspackHash) {
+    state.write(self.source().as_bytes());
   }
 }
 

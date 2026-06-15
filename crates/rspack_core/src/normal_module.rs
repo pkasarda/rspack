@@ -296,7 +296,7 @@ impl NormalModule {
     if let Some(error) = self.first_error() {
       error.message.hash(&mut hasher);
     } else if let Some(s) = &self.source {
-      hasher.write(s.source().as_bytes());
+      s.hash(&mut hasher);
     }
     "meta".hash(&mut hasher);
     build_meta.hash(&mut hasher);

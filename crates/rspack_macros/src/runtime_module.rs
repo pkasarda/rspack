@@ -239,7 +239,7 @@ pub fn impl_runtime_module(
         if self.full_hash() || self.dependent_hash() {
           self.generate_with_custom(compilation).await?.hash(&mut hasher);
         } else {
-          hasher.write(self.get_generated_code(compilation).await?.source().as_bytes());
+          self.get_generated_code(compilation).await?.hash(&mut hasher);
         }
         Ok(hasher.digest(&compilation.options.output.hash_digest))
       }

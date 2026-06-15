@@ -1448,14 +1448,9 @@ var {} = {{}};
   ) -> Result<()> {
     let runtime_template = compilation.runtime_template.create_runtime_code_template();
     // sample hash use content
-    let RenderBootstrapResult {
-      header,
-      startup,
-      allow_inline_startup,
-    } = Self::render_bootstrap(chunk_ukey, compilation, &runtime_template).await?;
-    header.hash(hasher);
-    startup.hash(hasher);
-    allow_inline_startup.hash(hasher);
+    Self::render_bootstrap(chunk_ukey, compilation, &runtime_template)
+      .await?
+      .hash(hasher);
     Ok(())
   }
 }
@@ -1471,4 +1466,12 @@ pub struct RenderBootstrapResult<'a> {
   pub header: Vec<Cow<'a, str>>,
   pub startup: Vec<Cow<'a, str>>,
   pub allow_inline_startup: bool,
+}
+
+impl RspackHashable for RenderBootstrapResult<'_> {
+  fn hash(&self, state: &mut RspackHash) {
+    self.header.hash(state);
+    self.startup.hash(state);
+    self.allow_inline_startup.hash(state);
+  }
 }
