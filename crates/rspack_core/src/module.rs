@@ -401,17 +401,89 @@ pub enum ExportsArgument {
 }
 
 #[cacheable]
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, rspack_hash::RspackHashable)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildMeta {
-  pub strict_esm_module: bool,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub strict_esm_module: Option<bool>,
   // same as is_async https://github.com/webpack/webpack/blob/3919c844eca394d73ca930e4fc5506fb86e2b094/lib/Module.js#L107
-  pub has_top_level_await: bool,
-  pub esm: bool,
-  pub exports_type: BuildMetaExportsType,
-  pub default_object: BuildMetaDefaultObject,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub has_top_level_await: Option<bool>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub esm: Option<bool>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub exports_type: Option<BuildMetaExportsType>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub default_object: Option<BuildMetaDefaultObject>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub side_effect_free: Option<bool>,
+}
+
+impl BuildMeta {
+  pub fn strict_esm_module(&self) -> bool {
+    self.strict_esm_module.unwrap_or(false)
+  }
+
+  pub fn has_top_level_await(&self) -> bool {
+    self.has_top_level_await.unwrap_or(false)
+  }
+
+  pub fn esm(&self) -> bool {
+    self.esm.unwrap_or(false)
+  }
+
+  pub fn exports_type(&self) -> BuildMetaExportsType {
+    self.exports_type.unwrap_or(BuildMetaExportsType::Unset)
+  }
+
+  pub fn default_object(&self) -> BuildMetaDefaultObject {
+    self.default_object.unwrap_or(BuildMetaDefaultObject::False)
+  }
+
+  pub fn side_effect_free(&self) -> bool {
+    self.side_effect_free.unwrap_or(false)
+  }
+
+  pub fn set_strict_esm_module(&mut self, value: bool) {
+    self.strict_esm_module = Some(value);
+  }
+
+  pub fn set_has_top_level_await(&mut self, value: bool) {
+    self.has_top_level_await = Some(value);
+  }
+
+  pub fn set_esm(&mut self, value: bool) {
+    self.esm = Some(value);
+  }
+
+  pub fn set_exports_type(&mut self, value: BuildMetaExportsType) {
+    self.exports_type = match value {
+      BuildMetaExportsType::Unset => None,
+      value => Some(value),
+    };
+  }
+
+  pub fn clear_exports_type(&mut self) {
+    self.exports_type = None;
+  }
+
+  pub fn set_default_object(&mut self, value: BuildMetaDefaultObject) {
+    self.default_object = Some(value);
+  }
+
+  pub fn set_side_effect_free(&mut self, value: bool) {
+    self.side_effect_free = Some(value);
+  }
+
+  pub fn with_exports_type(mut self, value: BuildMetaExportsType) -> Self {
+    self.set_exports_type(value);
+    self
+  }
+
+  pub fn with_default_object(mut self, value: BuildMetaDefaultObject) -> Self {
+    self.set_default_object(value);
+    self
+  }
 }
 
 impl RspackHashable for BuildMetaExportsType {
@@ -467,20 +539,6 @@ impl RspackHashable for ExportsArgument {
       ExportsArgument::RspackExports => "__webpack_exports__",
     }
     .hash(state);
-  }
-}
-
-impl RspackHashable for BuildMeta {
-  fn hash(&self, state: &mut RspackHash) {
-    rspack_hash::rspack_hash_update!(
-      state,
-      self.strict_esm_module,
-      self.has_top_level_await,
-      self.esm,
-      self.exports_type,
-      self.default_object,
-      self.side_effect_free,
-    );
   }
 }
 
@@ -588,7 +646,7 @@ pub trait Module:
   }
 
   fn get_strict_esm_module(&self) -> bool {
-    self.build_meta().strict_esm_module
+    self.build_meta().strict_esm_module()
   }
 
   /// The actual code generation of the module, which will be called by the `Compilation`.
@@ -698,8 +756,8 @@ fn get_exports_type_impl(
   exports_info_artifact: &ExportsInfoArtifact,
   strict: bool,
 ) -> ExportsType {
-  let export_type = &build_meta.exports_type;
-  let default_object = &build_meta.default_object;
+  let export_type = build_meta.exports_type();
+  let default_object = build_meta.default_object();
   match export_type {
     BuildMetaExportsType::Flagged => {
       if strict {
@@ -724,7 +782,7 @@ fn get_exports_type_impl(
       if strict {
         ExportsType::DefaultWithNamed
       } else {
-        fn handle_default(default_object: &BuildMetaDefaultObject) -> ExportsType {
+        fn handle_default(default_object: BuildMetaDefaultObject) -> ExportsType {
           match default_object {
             BuildMetaDefaultObject::Redirect => ExportsType::DefaultWithNamed,
             BuildMetaDefaultObject::RedirectWarn => ExportsType::DefaultWithNamed,
@@ -764,7 +822,7 @@ fn get_exports_type_impl(
             {
               let Some(target_exports_type) = mg
                 .module_by_identifier(&target.module)
-                .map(|m| m.build_meta().exports_type)
+                .map(|m| m.build_meta().exports_type())
               else {
                 return ExportsType::Dynamic;
               };

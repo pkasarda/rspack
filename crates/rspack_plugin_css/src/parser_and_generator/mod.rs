@@ -225,16 +225,16 @@ impl ParserAndGenerator for CssParserAndGenerator {
       let build_meta = &mut *parse_context.build_meta;
 
       build_info.strict = true;
-      build_meta.exports_type = if named_exports {
+      build_meta.set_exports_type(if named_exports {
         BuildMetaExportsType::Namespace
       } else {
         BuildMetaExportsType::Default
-      };
-      build_meta.default_object = if named_exports {
+      });
+      build_meta.set_default_object(if named_exports {
         BuildMetaDefaultObject::False
       } else {
         BuildMetaDefaultObject::Redirect
-      };
+      });
     }
 
     let exports_only = Self::exports_only(generator_options);

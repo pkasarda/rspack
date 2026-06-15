@@ -279,11 +279,9 @@ impl ContextModule {
       options,
       factory_meta: None,
       build_info: Default::default(),
-      build_meta: BuildMeta {
-        exports_type: BuildMetaExportsType::Default,
-        default_object: BuildMetaDefaultObject::RedirectWarn,
-        ..Default::default()
-      },
+      build_meta: BuildMeta::default()
+        .with_exports_type(BuildMetaExportsType::Default)
+        .with_default_object(BuildMetaDefaultObject::RedirectWarn),
       source_map_kind: SourceMapKind::empty(),
       resolve_dependencies,
     }
@@ -376,7 +374,7 @@ impl ContextModule {
     let mut map: HashMap<String, Vec<ModuleId>> = HashMap::default();
     for dep_id in dependencies {
       if let Some(module) = module_graph.get_module_by_dependency_id(dep_id)
-        && !module.build_meta().has_top_level_await
+        && !module.build_meta().has_top_level_await()
       {
         let id = ChunkGraph::get_module_id(&compilation.module_ids_artifact, module.identifier());
         if let Some(id) = id {
@@ -806,11 +804,11 @@ impl ContextModule {
           .phase
           .unwrap_or_default()
           .is_defer()
-          && !module.build_meta().has_top_level_await)
-          .then(|| {
-            has_no_module_deferred = false;
-            get_outgoing_async_modules(compilation, module.as_ref())
-          });
+          && !module.build_meta().has_top_level_await())
+        .then(|| {
+          has_no_module_deferred = false;
+          get_outgoing_async_modules(compilation, module.as_ref())
+        });
         Some((user_request, module_id.to_string(), chunks, async_deps))
       })
       .collect::<Vec<_>>();

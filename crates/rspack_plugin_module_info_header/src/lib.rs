@@ -247,10 +247,10 @@ async fn render_js_module_package(
   ));
 
   if self.verbose {
-    let export_type = module.build_meta().exports_type;
+    let export_type = module.build_meta().exports_type();
 
     new_source.add(RawStringSource::from(to_comment_with_nl(
-      &module.build_meta().exports_type.to_string(),
+      &module.build_meta().exports_type().to_string(),
     )));
 
     let module_graph = compilation.get_module_graph();

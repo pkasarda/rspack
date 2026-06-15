@@ -1098,16 +1098,16 @@ impl Module for ExternalModule {
             can_mangle = true;
           }
         } else {
-          self.build_meta.has_top_level_await = true;
+          self.build_meta.set_has_top_level_await(true);
           if !request.is_some_and(|r| r.has_rest()) {
             exports_type = BuildMetaExportsType::Namespace;
             can_mangle = false;
           }
         }
       }
-      "script" | "promise" => self.build_meta.has_top_level_await = true,
+      "script" | "promise" => self.build_meta.set_has_top_level_await(true),
       "import" => {
-        self.build_meta.has_top_level_await = true;
+        self.build_meta.set_has_top_level_await(true);
         if !request.is_some_and(|r| r.has_rest()) {
           exports_type = BuildMetaExportsType::Namespace;
           can_mangle = false;
@@ -1115,7 +1115,7 @@ impl Module for ExternalModule {
       }
       _ => {}
     }
-    self.build_meta.exports_type = exports_type;
+    self.build_meta.set_exports_type(exports_type);
     Ok(BuildResult {
       module: BoxModule::new(self),
       dependencies: vec![Box::new(StaticExportsDependency::new(

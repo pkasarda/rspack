@@ -86,3 +86,27 @@ fn derive_rspack_hashable_respects_explicit_field_order() {
 
   assert_eq!(derived, expected);
 }
+
+#[test]
+fn option_rspack_hashable_skips_none() {
+  let mut none = RspackHash::new(&HashFunction::Xxhash64);
+  none.update(&Option::<&str>::None);
+  let none = none.digest(&HashDigest::Hex).encoded().to_string();
+
+  let empty = RspackHash::new(&HashFunction::Xxhash64)
+    .digest(&HashDigest::Hex)
+    .encoded()
+    .to_string();
+
+  assert_eq!(none, empty);
+
+  let mut some = RspackHash::new(&HashFunction::Xxhash64);
+  some.update(&Some("value"));
+  let some = some.digest(&HashDigest::Hex).encoded().to_string();
+
+  let mut expected = RspackHash::new(&HashFunction::Xxhash64);
+  expected.write(b"value");
+  let expected = expected.digest(&HashDigest::Hex).encoded().to_string();
+
+  assert_eq!(some, expected);
+}

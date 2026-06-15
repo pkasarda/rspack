@@ -68,10 +68,7 @@ impl ContainerEntryModule {
         top_level_declarations: Some(FxHashSet::default()),
         ..Default::default()
       },
-      build_meta: BuildMeta {
-        exports_type: BuildMetaExportsType::Namespace,
-        ..Default::default()
-      },
+      build_meta: BuildMeta::default().with_exports_type(BuildMetaExportsType::Namespace),
       enhanced,
       request: None,
       version: None,
@@ -96,10 +93,7 @@ impl ContainerEntryModule {
         top_level_declarations: Some(FxHashSet::default()),
         ..Default::default()
       },
-      build_meta: BuildMeta {
-        exports_type: BuildMetaExportsType::Namespace,
-        ..Default::default()
-      },
+      build_meta: BuildMeta::default().with_exports_type(BuildMetaExportsType::Namespace),
       enhanced: false,
       request: Some(request),
       version: Some(version),
