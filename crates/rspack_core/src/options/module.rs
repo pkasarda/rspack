@@ -822,7 +822,7 @@ impl MergeFrom for AssetGeneratorDataUrl {
 }
 
 #[cacheable]
-#[derive(Debug, Clone, MergeFrom, Hash)]
+#[derive(Debug, Clone, MergeFrom)]
 pub struct AssetGeneratorDataUrlOptions {
   pub encoding: Option<DataUrlEncoding>,
   pub mimetype: Option<String>,
@@ -840,7 +840,7 @@ impl RspackHashable for AssetGeneratorDataUrlOptions {
 }
 
 #[cacheable]
-#[derive(Debug, Clone, MergeFrom, Hash)]
+#[derive(Debug, Clone, MergeFrom)]
 pub enum DataUrlEncoding {
   None,
   Base64,

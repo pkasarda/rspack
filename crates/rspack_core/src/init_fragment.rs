@@ -351,7 +351,7 @@ impl InitFragmentRenderContext for ChunkRenderContext {
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, rspack_hash::RspackHashable)]
 pub struct NormalInitFragment {
   content: String,
   stage: InitFragmentStage,
@@ -385,16 +385,6 @@ impl NormalInitFragment {
   }
 }
 
-rspack_hash::impl_rspack_hashable!(
-  NormalInitFragment,
-  content,
-  stage,
-  position,
-  key,
-  end_content,
-  top_level_decl_symbols,
-);
-
 impl<C> InitFragment<C> for NormalInitFragment {
   fn contents(self: Box<Self>, _context: &mut C) -> Result<InitFragmentContents> {
     Ok(InitFragmentContents {
@@ -420,7 +410,7 @@ impl<C> InitFragment<C> for NormalInitFragment {
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub enum ESMExportBinding {
   Getter(Atom),
   Value(Atom),
@@ -441,7 +431,7 @@ impl RspackHashable for ESMExportBinding {
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, rspack_hash::RspackHashable)]
 pub struct ESMExportInitFragment {
   exports_argument: ExportsArgument,
   // TODO: should be a map
@@ -462,13 +452,6 @@ impl ESMExportInitFragment {
     }
   }
 }
-
-rspack_hash::impl_rspack_hashable!(
-  ESMExportInitFragment,
-  exports_argument,
-  export_map,
-  is_circular_module,
-);
 
 impl<C: InitFragmentRenderContext> InitFragment<C> for ESMExportInitFragment {
   fn contents(mut self: Box<Self>, context: &mut C) -> Result<InitFragmentContents> {
@@ -559,7 +542,7 @@ impl<C: InitFragmentRenderContext> InitFragment<C> for ESMExportInitFragment {
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 pub struct AwaitDependenciesInitFragment {
   promises: LinkedHashSet<String, BuildHasherDefault<FxHasher>>,
 }
@@ -623,7 +606,7 @@ impl<C: InitFragmentRenderContext> InitFragment<C> for AwaitDependenciesInitFrag
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, rspack_hash::RspackHashable)]
 pub struct ConditionalInitFragment {
   content: String,
   stage: InitFragmentStage,
@@ -686,16 +669,6 @@ impl ConditionalInitFragment {
   }
 }
 
-rspack_hash::impl_rspack_hashable!(
-  ConditionalInitFragment,
-  content,
-  stage,
-  position,
-  key,
-  end_content,
-  runtime_condition,
-);
-
 impl<C: InitFragmentRenderContext> InitFragment<C> for ConditionalInitFragment {
   fn contents(self: Box<Self>, context: &mut C) -> Result<InitFragmentContents> {
     Ok(
@@ -749,7 +722,7 @@ fn wrap_in_condition(condition: &str, source: &str) -> String {
   )
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, rspack_hash::RspackHashable)]
 pub struct ExternalModuleInitFragment {
   imported_module: String,
   // webpack also supports `ImportSpecifiers` but not ever used.
@@ -819,16 +792,6 @@ impl ExternalModuleInitFragment {
     })
   }
 }
-
-rspack_hash::impl_rspack_hashable!(
-  ExternalModuleInitFragment,
-  imported_module,
-  import_specifiers,
-  default_import,
-  stage,
-  position,
-  key,
-);
 
 impl<C: InitFragmentRenderContext> InitFragment<C> for ExternalModuleInitFragment {
   fn contents(self: Box<Self>, _context: &mut C) -> Result<InitFragmentContents> {

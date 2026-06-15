@@ -13,15 +13,14 @@ use ustr::{Ustr, UstrSet};
 use crate::{EntryOptions, EntryRuntime};
 
 #[cacheable]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, rspack_hash::RspackHashable)]
 #[cfg_attr(allocative, derive(allocative::Allocative))]
 pub struct RuntimeSpec {
   #[cacheable(with=AsVec<AsRefStr>)]
+  #[rspack_hash(skip)]
   inner: UstrSet,
   key: String,
 }
-
-rspack_hash::impl_rspack_hashable!(RuntimeSpec, key,);
 
 impl std::fmt::Display for RuntimeSpec {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -198,19 +197,6 @@ pub fn is_runtime_equal(a: &RuntimeSpec, b: &RuntimeSpec) -> bool {
 pub enum RuntimeCondition {
   Boolean(bool),
   Spec(RuntimeSpec),
-}
-
-impl std::hash::Hash for RuntimeCondition {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    match self {
-      Self::Boolean(v) => v.hash(state),
-      Self::Spec(s) => {
-        for i in s.iter() {
-          i.hash(state);
-        }
-      }
-    }
-  }
 }
 
 impl rspack_hash::RspackHashable for RuntimeCondition {

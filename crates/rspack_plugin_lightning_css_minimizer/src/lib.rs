@@ -28,7 +28,7 @@ use thread_local::ThreadLocal;
 static CSS_ASSET_REGEXP: LazyLock<Regex> =
   LazyLock::new(|| Regex::new(r"\.css(\?.*)?$").expect("Invalid RegExp"));
 
-#[derive(Debug, Hash)]
+#[derive(Debug, rspack_hash::RspackHashable)]
 pub struct PluginOptions {
   pub test: Option<AssetConditions>,
   pub include: Option<AssetConditions>,
@@ -37,21 +37,17 @@ pub struct PluginOptions {
   pub minimizer_options: MinimizerOptions,
 }
 
-#[derive(Debug, Hash)]
+#[derive(Debug, rspack_hash::RspackHashable)]
 pub struct Draft {
   pub custom_media: bool,
 }
 
-rspack_hash::impl_rspack_hashable!(Draft, custom_media,);
-
-#[derive(Debug, Hash)]
+#[derive(Debug, rspack_hash::RspackHashable)]
 pub struct NonStandard {
   pub deep_selector_combinator: bool,
 }
 
-rspack_hash::impl_rspack_hashable!(NonStandard, deep_selector_combinator,);
-
-#[derive(Debug, Hash)]
+#[derive(Debug, rspack_hash::RspackHashable)]
 pub struct PseudoClasses {
   pub hover: Option<String>,
   pub active: Option<String>,
@@ -59,15 +55,6 @@ pub struct PseudoClasses {
   pub focus_visible: Option<String>,
   pub focus_within: Option<String>,
 }
-
-rspack_hash::impl_rspack_hashable!(
-  PseudoClasses,
-  hover,
-  active,
-  focus,
-  focus_visible,
-  focus_within,
-);
 
 #[derive(Debug)]
 pub struct MinimizerOptions {
@@ -79,35 +66,6 @@ pub struct MinimizerOptions {
   pub non_standard: Option<NonStandard>,
   pub pseudo_classes: Option<PseudoClasses>,
   pub unused_symbols: Vec<String>,
-}
-
-impl std::hash::Hash for MinimizerOptions {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    self.error_recovery.hash(state);
-    self.include.hash(state);
-    self.exclude.hash(state);
-    self.drafts.hash(state);
-    self.non_standard.hash(state);
-    self.unused_symbols.hash(state);
-    if let Some(pseudo_classes) = &self.pseudo_classes {
-      pseudo_classes.hover.hash(state);
-      pseudo_classes.active.hash(state);
-      pseudo_classes.focus.hash(state);
-      pseudo_classes.focus_visible.hash(state);
-      pseudo_classes.focus_within.hash(state);
-    }
-    if let Some(targets) = &self.targets {
-      targets.android.hash(state);
-      targets.chrome.hash(state);
-      targets.edge.hash(state);
-      targets.firefox.hash(state);
-      targets.ie.hash(state);
-      targets.ios_saf.hash(state);
-      targets.opera.hash(state);
-      targets.safari.hash(state);
-      targets.samsung.hash(state);
-    }
-  }
 }
 
 impl rspack_hash::RspackHashable for MinimizerOptions {
@@ -132,15 +90,6 @@ impl rspack_hash::RspackHashable for MinimizerOptions {
     }
   }
 }
-
-rspack_hash::impl_rspack_hashable!(
-  PluginOptions,
-  test,
-  include,
-  exclude,
-  remove_unused_local_idents,
-  minimizer_options,
-);
 
 #[plugin]
 #[derive(Debug)]

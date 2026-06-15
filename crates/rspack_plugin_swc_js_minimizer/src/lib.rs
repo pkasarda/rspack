@@ -46,7 +46,7 @@ const PLUGIN_NAME: &str = "rspack.SwcJsMinimizerRspackPlugin";
 static JAVASCRIPT_ASSET_REGEXP: LazyLock<Regex> =
   LazyLock::new(|| Regex::new(r"\.[cm]?js(\?.*)?$").expect("Invalid RegExp"));
 
-#[derive(Debug, Hash)]
+#[derive(Debug, Hash, rspack_hash::RspackHashable)]
 pub struct PluginOptions {
   pub test: Option<AssetConditions>,
   pub include: Option<AssetConditions>,
@@ -70,33 +70,6 @@ pub struct MinimizerOptions {
   pub __compress_cache: OnceCell<BoolOrDataConfig<String>>,
   pub __mangle_cache: OnceCell<BoolOrDataConfig<String>>,
   pub __format_cache: OnceCell<String>,
-}
-
-impl std::hash::Hash for MinimizerOptions {
-  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    self
-      .__format_cache
-      .get_or_init(|| simd_json::to_string(&self.format).expect("Should be able to serialize"))
-      .hash(state);
-    self
-      .__compress_cache
-      .get_or_init(|| {
-        self
-          .compress
-          .as_ref()
-          .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
-      })
-      .hash(state);
-    self
-      .__mangle_cache
-      .get_or_init(|| {
-        self
-          .mangle
-          .as_ref()
-          .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
-      })
-      .hash(state);
-  }
 }
 
 impl rspack_hash::RspackHashable for MinimizerOptions {
@@ -123,6 +96,33 @@ impl rspack_hash::RspackHashable for MinimizerOptions {
           .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
       }),
     );
+  }
+}
+
+impl std::hash::Hash for MinimizerOptions {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self
+      .__format_cache
+      .get_or_init(|| simd_json::to_string(&self.format).expect("Should be able to serialize"))
+      .hash(state);
+    self
+      .__compress_cache
+      .get_or_init(|| {
+        self
+          .compress
+          .as_ref()
+          .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
+      })
+      .hash(state);
+    self
+      .__mangle_cache
+      .get_or_init(|| {
+        self
+          .mangle
+          .as_ref()
+          .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
+      })
+      .hash(state);
   }
 }
 
@@ -168,7 +168,7 @@ impl<T: std::fmt::Debug + std::hash::Hash + rspack_hash::RspackHashable> rspack_
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, rspack_hash::RspackHashable)]
 pub struct ExtractComments {
   pub condition: String,
   pub condition_flags: String,
@@ -182,17 +182,6 @@ impl std::hash::Hash for ExtractComments {
     self.banner.hash(state);
   }
 }
-
-rspack_hash::impl_rspack_hashable!(ExtractComments, condition, condition_flags, banner,);
-
-rspack_hash::impl_rspack_hashable!(
-  PluginOptions,
-  test,
-  include,
-  exclude,
-  extract_comments,
-  minimizer_options,
-);
 
 #[derive(Debug)]
 struct NormalizedExtractComments {

@@ -453,7 +453,7 @@ impl RspackHashable for EntryRuntime {
 
 // pub type EntryRuntime = String;
 #[cacheable]
-#[derive(Debug, Default, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Hash, PartialEq, Eq, rspack_hash::RspackHashable)]
 pub struct EntryOptions {
   pub name: Option<String>,
   pub runtime: Option<EntryRuntime>,
@@ -510,21 +510,6 @@ impl EntryOptions {
   }
 }
 
-rspack_hash::impl_rspack_hashable!(
-  EntryOptions,
-  name,
-  runtime,
-  chunk_loading,
-  wasm_loading,
-  async_chunks,
-  public_path,
-  base_uri,
-  filename,
-  library,
-  depend_on,
-  layer,
-);
-
 #[derive(Debug, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ChunkGroupOrderKey {
   Preload,
@@ -541,7 +526,7 @@ impl Display for ChunkGroupOrderKey {
 }
 
 #[cacheable]
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, rspack_hash::RspackHashable)]
 pub struct ChunkGroupOptions {
   pub name: Option<String>,
   pub preload_order: Option<i32>,
@@ -569,16 +554,8 @@ impl ChunkGroupOptions {
   }
 }
 
-rspack_hash::impl_rspack_hashable!(
-  ChunkGroupOptions,
-  name,
-  preload_order,
-  prefetch_order,
-  fetch_priority,
-);
-
 #[cacheable]
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GroupOptions {
   Entrypoint(Box<EntryOptions>),
   ChunkGroup(ChunkGroupOptions),

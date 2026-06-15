@@ -131,13 +131,11 @@ impl rspack_hash::RspackHashable for UsedNameItem {
   }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, rspack_hash::RspackHashable)]
 pub struct InlinedUsedName {
   value: EvaluatedInlinableValue,
   suffix: Vec<Atom>,
 }
-
-rspack_hash::impl_rspack_hashable!(InlinedUsedName, value, suffix,);
 
 impl InlinedUsedName {
   pub fn new(value: EvaluatedInlinableValue) -> Self {

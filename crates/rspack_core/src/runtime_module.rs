@@ -70,7 +70,7 @@ pub trait CustomSourceRuntimeModule {
 pub type BoxRuntimeModule = Box<dyn RuntimeModule>;
 
 #[cacheable]
-#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RuntimeModuleStage {
   #[default]
   Normal, // Runtime modules without any dependencies to other runtime modules

@@ -11,6 +11,7 @@ use base64_simd::{AsOut, STANDARD, URL_SAFE_NO_PAD};
 use md4::Digest;
 use rspack_cacheable::{cacheable, with::AsPreset};
 use rspack_collections::Identifier;
+pub use rspack_macros::RspackHashable;
 use rspack_sources::Source;
 use rspack_util::{
   MergeFrom,
@@ -154,17 +155,6 @@ macro_rules! rspack_hash_update {
     $(
       $state.update(&$value);
     )+
-  };
-}
-
-#[macro_export]
-macro_rules! impl_rspack_hashable {
-  ($ty:ty, $($field:ident),+ $(,)?) => {
-    impl $crate::RspackHashable for $ty {
-      fn hash(&self, state: &mut $crate::RspackHash) {
-        $crate::rspack_hash_update!(state, $(self.$field),+);
-      }
-    }
   };
 }
 
@@ -425,7 +415,8 @@ impl RspackHash {
 }
 
 #[cacheable]
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, Eq, RspackHashable)]
+#[rspack_hash(crate = crate)]
 pub struct RspackHashDigest {
   #[cacheable(with=AsPreset)]
   encoded: SmolStr,
@@ -486,8 +477,6 @@ impl std::hash::Hash for RspackHashDigest {
     std::hash::Hash::hash(&self.encoded, state);
   }
 }
-
-impl_rspack_hashable!(RspackHashDigest, encoded,);
 
 impl PartialEq for RspackHashDigest {
   fn eq(&self, other: &Self) -> bool {

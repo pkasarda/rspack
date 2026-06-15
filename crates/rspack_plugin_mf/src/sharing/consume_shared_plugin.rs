@@ -24,7 +24,7 @@ use super::{
 use crate::ShareScope;
 
 #[cacheable]
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, rspack_hash::RspackHashable)]
 pub struct ConsumeOptions {
   pub import: Option<String>,
   pub import_resolved: Option<String>,
@@ -37,20 +37,6 @@ pub struct ConsumeOptions {
   pub eager: bool,
   pub tree_shaking_mode: Option<String>,
 }
-
-rspack_hash::impl_rspack_hashable!(
-  ConsumeOptions,
-  import,
-  import_resolved,
-  share_key,
-  share_scope,
-  required_version,
-  package_name,
-  strict_version,
-  singleton,
-  eager,
-  tree_shaking_mode,
-);
 
 #[cacheable]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

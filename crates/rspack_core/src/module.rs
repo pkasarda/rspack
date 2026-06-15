@@ -329,7 +329,7 @@ impl Default for BuildInfo {
 }
 
 #[cacheable]
-#[derive(Debug, Default, Clone, Copy, Hash, PartialEq, Eq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum BuildMetaExportsType {
   #[default]
@@ -363,7 +363,7 @@ pub enum ExportsType {
 }
 
 #[cacheable]
-#[derive(Debug, Default, Clone, Copy, Hash, Serialize)]
+#[derive(Debug, Default, Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum BuildMetaDefaultObject {
   #[default]
@@ -383,7 +383,7 @@ pub struct DeferredPureCheck {
 }
 
 #[cacheable]
-#[derive(Debug, Default, Clone, Copy, Hash, Serialize)]
+#[derive(Debug, Default, Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ModuleArgument {
   #[default]
@@ -392,7 +392,7 @@ pub enum ModuleArgument {
 }
 
 #[cacheable]
-#[derive(Debug, Default, Clone, Copy, Hash, PartialEq, Eq, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ExportsArgument {
   #[default]
@@ -401,7 +401,7 @@ pub enum ExportsArgument {
 }
 
 #[cacheable]
-#[derive(Debug, Default, Clone, Hash, Serialize)]
+#[derive(Debug, Default, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildMeta {
   pub strict_esm_module: bool,

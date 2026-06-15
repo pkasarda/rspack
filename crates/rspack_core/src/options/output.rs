@@ -515,7 +515,7 @@ pub fn get_js_chunk_filename_template(
 }
 
 #[cacheable]
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, rspack_hash::RspackHashable)]
 pub struct LibraryOptions {
   pub name: Option<LibraryName>,
   pub export: Option<LibraryExport>,
@@ -526,30 +526,18 @@ pub struct LibraryOptions {
   pub amd_container: Option<String>,
 }
 
-rspack_hash::impl_rspack_hashable!(
-  LibraryOptions,
-  name,
-  export,
-  library_type,
-  umd_named_define,
-  auxiliary_comment,
-  amd_container,
-);
-
 pub type LibraryType = String;
 
 pub type LibraryExport = Vec<String>;
 
 #[cacheable]
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, rspack_hash::RspackHashable)]
 pub struct LibraryAuxiliaryComment {
   pub root: Option<String>,
   pub commonjs: Option<String>,
   pub commonjs2: Option<String>,
   pub amd: Option<String>,
 }
-
-rspack_hash::impl_rspack_hashable!(LibraryAuxiliaryComment, root, commonjs, commonjs2, amd,);
 
 #[cacheable]
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -584,14 +572,12 @@ impl RspackHashable for LibraryNonUmdObject {
 }
 
 #[cacheable]
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, rspack_hash::RspackHashable)]
 pub struct LibraryCustomUmdObject {
   pub amd: Option<String>,
   pub commonjs: Option<String>,
   pub root: Option<Vec<String>>,
 }
-
-rspack_hash::impl_rspack_hashable!(LibraryCustomUmdObject, amd, commonjs, root,);
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Environment {
