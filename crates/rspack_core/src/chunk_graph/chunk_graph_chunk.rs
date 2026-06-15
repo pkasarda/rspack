@@ -78,7 +78,7 @@ impl ChunkId {
   }
 }
 
-impl rspack_hash::RspackContentHashable for ChunkId {
+impl rspack_hash::RspackHashable for ChunkId {
   fn hash(&self, state: &mut RspackHash) {
     self.0.as_str().hash(state);
   }

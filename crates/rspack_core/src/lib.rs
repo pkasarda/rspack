@@ -103,7 +103,7 @@ pub use rspack_location::{
 pub mod concatenated_module;
 pub mod reserved_names;
 use rspack_cacheable::{cacheable, with::AsPreset};
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 pub use rspack_loader_runner::{
   AdditionalData, BUILTIN_LOADER_PREFIX, ParseMeta, ResourceData, ResourceParsedData, Scheme,
   get_scheme, parse_resource,
@@ -155,7 +155,7 @@ impl std::fmt::Display for SourceType {
   }
 }
 
-impl RspackContentHashable for SourceType {
+impl RspackHashable for SourceType {
   fn hash(&self, state: &mut RspackHash) {
     self.to_string().hash(state);
   }

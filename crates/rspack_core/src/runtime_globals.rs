@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use bitflags::bitflags;
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rustc_hash::FxHashMap;
 
 use crate::CompilerOptions;
@@ -569,7 +569,7 @@ impl RuntimeGlobals {
   }
 }
 
-impl RspackContentHashable for RuntimeGlobals {
+impl RspackHashable for RuntimeGlobals {
   fn hash(&self, state: &mut RspackHash) {
     self.bits().hash(state);
   }

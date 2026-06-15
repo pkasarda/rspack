@@ -15,7 +15,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, RawStringSource, SourceExt},
 };
 use rspack_error::{Diagnostic, IntoTWithDiagnosticArray, Result, error};
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_util::{base64, fx_hash::FxHashSet, identifier::make_paths_relative};
 

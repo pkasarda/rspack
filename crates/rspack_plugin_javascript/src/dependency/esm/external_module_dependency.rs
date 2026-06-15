@@ -4,7 +4,7 @@ use rspack_core::{
   ExternalModuleInitFragment, InitFragmentExt, InitFragmentStage, RuntimeSpec, TemplateContext,
   TemplateReplaceSource,
 };
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 #[cacheable]
 #[derive(Debug, Clone)]

@@ -82,7 +82,7 @@ impl Filename {
   }
 }
 
-impl rspack_hash::RspackContentHashable for Filename {
+impl rspack_hash::RspackHashable for Filename {
   fn hash(&self, state: &mut RspackHash) {
     if let FilenameKind::Template(template) = &self.0 {
       template.hash(state);

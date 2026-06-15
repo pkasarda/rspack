@@ -10,7 +10,7 @@ use rspack_core::{
   to_comment_with_nl,
 };
 use rspack_error::Result;
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_css::{
   CssPlugin,

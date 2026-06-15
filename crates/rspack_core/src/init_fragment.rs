@@ -9,7 +9,7 @@ use dyn_clone::{DynClone, clone_trait_object};
 use hashlink::LinkedHashSet;
 use indexmap::IndexMap;
 use rspack_error::Result;
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_sources::{BoxSource, ConcatSource, RawStringSource, SourceExt};
 use rspack_util::ext::IntoAny;
 use rustc_hash::FxHasher;
@@ -52,7 +52,7 @@ impl InitFragmentKey {
   }
 }
 
-impl RspackContentHashable for InitFragmentKey {
+impl RspackHashable for InitFragmentKey {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       InitFragmentKey::Unique(id) => {
@@ -215,9 +215,7 @@ pub trait InitFragmentRenderContext {
   fn runtime_template(&mut self) -> &mut ModuleCodeTemplate;
 }
 
-pub trait InitFragment<C>:
-  IntoAny + RspackContentHashable + DynClone + Debug + Sync + Send
-{
+pub trait InitFragment<C>: IntoAny + RspackHashable + DynClone + Debug + Sync + Send {
   /// getContent + getEndContent
   fn contents(self: Box<Self>, context: &mut C) -> Result<InitFragmentContents>;
 
@@ -256,7 +254,7 @@ pub enum InitFragmentStage {
   StageAsyncESMImports,
 }
 
-impl RspackContentHashable for InitFragmentStage {
+impl RspackHashable for InitFragmentStage {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       InitFragmentStage::StageConstants => "constants",
@@ -387,7 +385,7 @@ impl NormalInitFragment {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   NormalInitFragment,
   content,
   stage,
@@ -428,7 +426,7 @@ pub enum ESMExportBinding {
   Value(Atom),
 }
 
-impl RspackContentHashable for ESMExportBinding {
+impl RspackHashable for ESMExportBinding {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       ESMExportBinding::Getter(value) => {
@@ -465,7 +463,7 @@ impl ESMExportInitFragment {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   ESMExportInitFragment,
   exports_argument,
   export_map,
@@ -578,7 +576,7 @@ impl AwaitDependenciesInitFragment {
   }
 }
 
-impl RspackContentHashable for AwaitDependenciesInitFragment {
+impl RspackHashable for AwaitDependenciesInitFragment {
   fn hash(&self, state: &mut RspackHash) {
     for promise in &self.promises {
       promise.hash(state);
@@ -688,7 +686,7 @@ impl ConditionalInitFragment {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   ConditionalInitFragment,
   content,
   stage,
@@ -822,7 +820,7 @@ impl ExternalModuleInitFragment {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   ExternalModuleInitFragment,
   imported_module,
   import_specifiers,

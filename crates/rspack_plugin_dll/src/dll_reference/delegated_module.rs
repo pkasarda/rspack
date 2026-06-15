@@ -13,7 +13,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, OriginalSource, RawStringSource},
 };
 use rspack_error::{Result, impl_empty_diagnosable_trait};
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_util::{json_stringify, source_map::ModuleSourceMapConfig};
 
 use super::delegated_source_dependency::DelegatedSourceDependency;

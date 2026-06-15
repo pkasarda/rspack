@@ -21,7 +21,7 @@ pub struct RuntimeSpec {
   key: String,
 }
 
-rspack_hash::impl_rspack_content_hashable!(RuntimeSpec, key,);
+rspack_hash::impl_rspack_hashable!(RuntimeSpec, key,);
 
 impl std::fmt::Display for RuntimeSpec {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -213,7 +213,7 @@ impl std::hash::Hash for RuntimeCondition {
   }
 }
 
-impl rspack_hash::RspackContentHashable for RuntimeCondition {
+impl rspack_hash::RspackHashable for RuntimeCondition {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       RuntimeCondition::Boolean(value) => value.hash(state),

@@ -12,7 +12,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, RawStringSource},
 };
 use rspack_error::{Result, impl_empty_diagnosable_trait};
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 
 use super::dll_entry_dependency::DllEntryDependency;
 

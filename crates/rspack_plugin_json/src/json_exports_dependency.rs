@@ -5,7 +5,7 @@ use rspack_core::{
   DependencyId, ExportNameOrSpec, ExportSpec, ExportsInfoArtifact, ExportsOfExportsSpec,
   ExportsSpec, ModuleGraph, ModuleGraphCacheArtifact, RuntimeSpec,
 };
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_util::itoa;
 
 #[cacheable]

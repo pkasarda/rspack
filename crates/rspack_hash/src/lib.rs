@@ -122,12 +122,12 @@ pub enum RspackHash {
   SHA256(Box<sha2::Sha256>),
 }
 
-pub trait RspackContentHashable {
+pub trait RspackHashable {
   fn hash(&self, state: &mut RspackHash);
 }
 
 #[macro_export]
-macro_rules! rspack_content_hash_update {
+macro_rules! rspack_hash_update {
   ($state:expr, $($value:expr),+ $(,)?) => {
     $(
       $state.update(&$value);
@@ -136,29 +136,29 @@ macro_rules! rspack_content_hash_update {
 }
 
 #[macro_export]
-macro_rules! impl_rspack_content_hashable {
+macro_rules! impl_rspack_hashable {
   ($ty:ty, $($field:ident),+ $(,)?) => {
-    impl $crate::RspackContentHashable for $ty {
+    impl $crate::RspackHashable for $ty {
       fn hash(&self, state: &mut $crate::RspackHash) {
-        $crate::rspack_content_hash_update!(state, $(self.$field),+);
+        $crate::rspack_hash_update!(state, $(self.$field),+);
       }
     }
   };
 }
 
-impl<T: RspackContentHashable + ?Sized> RspackContentHashable for &T {
+impl<T: RspackHashable + ?Sized> RspackHashable for &T {
   fn hash(&self, state: &mut RspackHash) {
     (*self).hash(state);
   }
 }
 
-impl<T: RspackContentHashable + ?Sized> RspackContentHashable for Box<T> {
+impl<T: RspackHashable + ?Sized> RspackHashable for Box<T> {
   fn hash(&self, state: &mut RspackHash) {
     (**self).hash(state);
   }
 }
 
-impl<T: RspackContentHashable> RspackContentHashable for Option<T> {
+impl<T: RspackHashable> RspackHashable for Option<T> {
   fn hash(&self, state: &mut RspackHash) {
     if let Some(value) = self {
       value.hash(state);
@@ -166,7 +166,7 @@ impl<T: RspackContentHashable> RspackContentHashable for Option<T> {
   }
 }
 
-impl<T: RspackContentHashable> RspackContentHashable for [T] {
+impl<T: RspackHashable> RspackHashable for [T] {
   fn hash(&self, state: &mut RspackHash) {
     for value in self {
       value.hash(state);
@@ -174,13 +174,13 @@ impl<T: RspackContentHashable> RspackContentHashable for [T] {
   }
 }
 
-impl<T: RspackContentHashable> RspackContentHashable for Vec<T> {
+impl<T: RspackHashable> RspackHashable for Vec<T> {
   fn hash(&self, state: &mut RspackHash) {
     self.as_slice().hash(state);
   }
 }
 
-impl<T: RspackContentHashable + Ord> RspackContentHashable for BTreeSet<T> {
+impl<T: RspackHashable + Ord> RspackHashable for BTreeSet<T> {
   fn hash(&self, state: &mut RspackHash) {
     for value in self {
       value.hash(state);
@@ -188,9 +188,7 @@ impl<T: RspackContentHashable + Ord> RspackContentHashable for BTreeSet<T> {
   }
 }
 
-impl<K: RspackContentHashable + Ord, V: RspackContentHashable> RspackContentHashable
-  for BTreeMap<K, V>
-{
+impl<K: RspackHashable + Ord, V: RspackHashable> RspackHashable for BTreeMap<K, V> {
   fn hash(&self, state: &mut RspackHash) {
     for (key, value) in self {
       key.hash(state);
@@ -199,56 +197,56 @@ impl<K: RspackContentHashable + Ord, V: RspackContentHashable> RspackContentHash
   }
 }
 
-impl<T: RspackContentHashable, const N: usize> RspackContentHashable for [T; N] {
+impl<T: RspackHashable, const N: usize> RspackHashable for [T; N] {
   fn hash(&self, state: &mut RspackHash) {
     self.as_slice().hash(state);
   }
 }
 
-impl<A: RspackContentHashable, B: RspackContentHashable> RspackContentHashable for (A, B) {
+impl<A: RspackHashable, B: RspackHashable> RspackHashable for (A, B) {
   fn hash(&self, state: &mut RspackHash) {
     self.0.hash(state);
     self.1.hash(state);
   }
 }
 
-impl RspackContentHashable for str {
+impl RspackHashable for str {
   fn hash(&self, state: &mut RspackHash) {
     state.write(self.as_bytes());
   }
 }
 
-impl RspackContentHashable for String {
+impl RspackHashable for String {
   fn hash(&self, state: &mut RspackHash) {
     self.as_str().hash(state);
   }
 }
 
-impl RspackContentHashable for SmolStr {
+impl RspackHashable for SmolStr {
   fn hash(&self, state: &mut RspackHash) {
     self.as_str().hash(state);
   }
 }
 
-impl RspackContentHashable for Atom {
+impl RspackHashable for Atom {
   fn hash(&self, state: &mut RspackHash) {
     self.as_str().hash(state);
   }
 }
 
-impl RspackContentHashable for Identifier {
+impl RspackHashable for Identifier {
   fn hash(&self, state: &mut RspackHash) {
     self.as_str().hash(state);
   }
 }
 
-impl RspackContentHashable for Cow<'_, str> {
+impl RspackHashable for Cow<'_, str> {
   fn hash(&self, state: &mut RspackHash) {
     self.as_ref().hash(state);
   }
 }
 
-impl RspackContentHashable for bool {
+impl RspackHashable for bool {
   fn hash(&self, state: &mut RspackHash) {
     state.write(if *self { b"true" } else { b"false" });
   }
@@ -257,7 +255,7 @@ impl RspackContentHashable for bool {
 macro_rules! impl_content_hash_for_integer {
   ($($ty:ty),+ $(,)?) => {
     $(
-      impl RspackContentHashable for $ty {
+      impl RspackHashable for $ty {
         fn hash(&self, state: &mut RspackHash) {
           state.write(self.to_string().as_bytes());
         }
@@ -270,19 +268,19 @@ impl_content_hash_for_integer!(
   u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
 );
 
-impl RspackContentHashable for Path {
+impl RspackHashable for Path {
   fn hash(&self, state: &mut RspackHash) {
     self.to_string_lossy().hash(state);
   }
 }
 
-impl RspackContentHashable for PathBuf {
+impl RspackHashable for PathBuf {
   fn hash(&self, state: &mut RspackHash) {
     self.as_path().hash(state);
   }
 }
 
-impl RspackContentHashable for AssetCondition {
+impl RspackHashable for AssetCondition {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       AssetCondition::String(value) => {
@@ -298,7 +296,7 @@ impl RspackContentHashable for AssetCondition {
   }
 }
 
-impl RspackContentHashable for AssetConditions {
+impl RspackHashable for AssetConditions {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       AssetConditions::Single(value) => {
@@ -340,7 +338,7 @@ impl RspackHash {
     this
   }
 
-  pub fn update<T: RspackContentHashable + ?Sized>(&mut self, value: &T) {
+  pub fn update<T: RspackHashable + ?Sized>(&mut self, value: &T) {
     value.hash(self);
   }
 
@@ -455,7 +453,7 @@ impl std::hash::Hash for RspackHashDigest {
   }
 }
 
-impl_rspack_content_hashable!(RspackHashDigest, encoded,);
+impl_rspack_hashable!(RspackHashDigest, encoded,);
 
 impl PartialEq for RspackHashDigest {
   fn eq(&self, other: &Self) -> bool {

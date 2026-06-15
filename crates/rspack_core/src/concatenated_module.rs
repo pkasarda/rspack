@@ -13,7 +13,7 @@ use rspack_collections::{
   Identifiable, Identifier, IdentifierIndexMap, IdentifierIndexSet, IdentifierMap, IdentifierSet,
 };
 use rspack_error::{Diagnosable, Diagnostic, Error, Result, ToStringResultToRspackResultExt};
-use rspack_hash::{HashDigest, HashFunction, RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{HashDigest, HashFunction, RspackHash, RspackHashDigest, RspackHashable};
 use rspack_hook::define_hook;
 use rspack_sources::{
   BoxSource, CachedSource, ConcatSource, RawStringSource, ReplaceSource, Source, SourceExt,

@@ -7,7 +7,7 @@ use itertools::Itertools;
 use rspack_cacheable::cacheable;
 use rspack_collections::IdentifierMap;
 use rspack_error::{Result, error};
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_util::fx_hash::FxIndexSet;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};
 
@@ -442,7 +442,7 @@ impl EntryRuntime {
   }
 }
 
-impl RspackContentHashable for EntryRuntime {
+impl RspackHashable for EntryRuntime {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       EntryRuntime::String(s) => s.hash(state),
@@ -510,7 +510,7 @@ impl EntryOptions {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   EntryOptions,
   name,
   runtime,
@@ -569,7 +569,7 @@ impl ChunkGroupOptions {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   ChunkGroupOptions,
   name,
   preload_order,
@@ -584,7 +584,7 @@ pub enum GroupOptions {
   ChunkGroup(ChunkGroupOptions),
 }
 
-impl RspackContentHashable for GroupOptions {
+impl RspackHashable for GroupOptions {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       GroupOptions::Entrypoint(options) => {

@@ -11,7 +11,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, CachedSource, SourceExt},
 };
 use rspack_error::{Diagnostic, Result};
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_hook::plugin_hook;
 use rustc_hash::FxHashMap;
 

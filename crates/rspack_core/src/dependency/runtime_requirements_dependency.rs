@@ -1,5 +1,5 @@
 use rspack_cacheable::{cacheable, cacheable_dyn};
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 use crate::{
   Compilation, DependencyCodeGeneration, DependencyRange, DependencyTemplate,
@@ -15,7 +15,7 @@ pub enum RuntimeRequirementsDependencyMode {
   AddOnly,
 }
 
-impl RspackContentHashable for RuntimeRequirementsDependencyMode {
+impl RspackHashable for RuntimeRequirementsDependencyMode {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       RuntimeRequirementsDependencyMode::Normal => "normal",

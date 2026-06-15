@@ -11,7 +11,7 @@ use rspack_core::{
   impl_module_meta_info, impl_source_map_config, module_update_hash, rspack_sources::BoxSource,
 };
 use rspack_error::{Result, impl_empty_diagnosable_trait};
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_util::{json_stringify, json_stringify_str, source_map::SourceMapKind};
 
 use super::{

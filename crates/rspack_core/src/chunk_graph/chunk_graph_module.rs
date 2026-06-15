@@ -74,7 +74,7 @@ impl ModuleId {
   }
 }
 
-impl rspack_hash::RspackContentHashable for ModuleId {
+impl rspack_hash::RspackHashable for ModuleId {
   fn hash(&self, state: &mut RspackHash) {
     self.as_str().hash(state);
   }

@@ -7,7 +7,7 @@ use std::{
 use anymap::CloneAny;
 use rspack_collections::IdentifierMap;
 use rspack_hash::{
-  HashDigest, HashFunction, HashSalt, RspackContentHashable, RspackHash, RspackHashDigest,
+  HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest, RspackHashable,
 };
 use rspack_sources::BoxSource;
 use rspack_util::atom::Atom;

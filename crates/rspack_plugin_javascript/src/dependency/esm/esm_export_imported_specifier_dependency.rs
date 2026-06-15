@@ -26,7 +26,7 @@ use rspack_core::{
   property_name, render_make_deferred_namespace_mode_from_exports_type, to_normal_comment,
 };
 use rspack_error::{Diagnostic, Error, Severity};
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_util::json_stringify;
 use rustc_hash::{FxHashSet as HashSet, FxHasher};
 use swc_atoms::Atom;

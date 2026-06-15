@@ -9,7 +9,7 @@ use rspack_core::{
   get_js_chunk_filename_template,
 };
 use rspack_error::Result;
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JsPlugin, impl_plugin_for_js_plugin::chunk_has_js,

@@ -61,7 +61,7 @@ impl std::hash::Hash for EvaluatedInlinableValue {
   }
 }
 
-impl rspack_hash::RspackContentHashable for EvaluatedInlinableValue {
+impl rspack_hash::RspackHashable for EvaluatedInlinableValue {
   fn hash(&self, state: &mut RspackHash) {
     self.render("").hash(state);
   }
@@ -122,7 +122,7 @@ pub enum UsedNameItem {
   Inlined(EvaluatedInlinableValue),
 }
 
-impl rspack_hash::RspackContentHashable for UsedNameItem {
+impl rspack_hash::RspackHashable for UsedNameItem {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       UsedNameItem::Str(value) => value.hash(state),
@@ -137,7 +137,7 @@ pub struct InlinedUsedName {
   suffix: Vec<Atom>,
 }
 
-rspack_hash::impl_rspack_content_hashable!(InlinedUsedName, value, suffix,);
+rspack_hash::impl_rspack_hashable!(InlinedUsedName, value, suffix,);
 
 impl InlinedUsedName {
   pub fn new(value: EvaluatedInlinableValue) -> Self {
@@ -187,7 +187,7 @@ pub enum ExportProvided {
   Unknown,
 }
 
-impl rspack_hash::RspackContentHashable for ExportProvided {
+impl rspack_hash::RspackHashable for ExportProvided {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       ExportProvided::Provided => "provided",
@@ -217,7 +217,7 @@ pub enum UsageState {
   Used = 4,
 }
 
-impl rspack_hash::RspackContentHashable for UsageState {
+impl rspack_hash::RspackHashable for UsageState {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       UsageState::Unused => "unused",

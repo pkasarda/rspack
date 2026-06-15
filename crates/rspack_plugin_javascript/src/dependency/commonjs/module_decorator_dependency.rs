@@ -6,7 +6,7 @@ use rspack_core::{
   NormalInitFragment, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
   create_exports_object_referenced, create_no_exports_referenced,
 };
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 #[cacheable]
 #[derive(Debug, Clone)]

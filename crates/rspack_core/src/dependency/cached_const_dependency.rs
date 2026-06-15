@@ -1,5 +1,5 @@
 use rspack_cacheable::{cacheable, cacheable_dyn};
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 use super::DependencyRange;
 use crate::{

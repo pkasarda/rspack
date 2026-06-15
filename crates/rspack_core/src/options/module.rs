@@ -10,7 +10,7 @@ use derive_more::Debug;
 use futures::future::BoxFuture;
 use rspack_cacheable::{cacheable, with::Unsupported};
 use rspack_error::{Result, error};
-use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackContentHashable, RspackHash};
+use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackHash, RspackHashable};
 use rspack_macros::MergeFrom;
 use rspack_regex::RspackRegex;
 use rspack_util::{MergeFrom, try_all, try_any};
@@ -149,7 +149,7 @@ impl fmt::Display for DynamicImportFetchPriority {
   }
 }
 
-impl RspackContentHashable for DynamicImportFetchPriority {
+impl RspackHashable for DynamicImportFetchPriority {
   fn hash(&self, state: &mut RspackHash) {
     self.to_string().hash(state);
   }
@@ -828,7 +828,7 @@ pub struct AssetGeneratorDataUrlOptions {
   pub mimetype: Option<String>,
 }
 
-impl RspackContentHashable for AssetGeneratorDataUrlOptions {
+impl RspackHashable for AssetGeneratorDataUrlOptions {
   fn hash(&self, state: &mut RspackHash) {
     if let Some(encoding) = &self.encoding
       && !matches!(encoding, DataUrlEncoding::Base64)
@@ -855,7 +855,7 @@ impl fmt::Display for DataUrlEncoding {
   }
 }
 
-impl RspackContentHashable for DataUrlEncoding {
+impl RspackHashable for DataUrlEncoding {
   fn hash(&self, state: &mut RspackHash) {
     self.to_string().hash(state);
   }

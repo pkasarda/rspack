@@ -37,7 +37,7 @@ use rspack_core::{
   split_readable_identifier,
 };
 use rspack_error::{Result, ToStringResultToRspackResultExt};
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_hook::plugin;
 use rspack_util::SpanExt;
 #[cfg(allocative)]

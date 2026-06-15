@@ -9,7 +9,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, MapOptions, ObjectPool, RawStringSource, Source, SourceExt},
 };
 use rspack_error::Result;
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JavascriptModulesInlineInRuntimeBailout,

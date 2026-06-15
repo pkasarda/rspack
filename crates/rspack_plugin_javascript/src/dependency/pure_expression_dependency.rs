@@ -7,7 +7,7 @@ use rspack_core::{
   RuntimeCondition, RuntimeSpec, SideEffectsStateArtifact, TemplateContext, TemplateReplaceSource,
   UsedByExports,
 };
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 use crate::runtime_condition_used_by_exports;
 

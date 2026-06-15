@@ -10,7 +10,7 @@ use rspack_core::{
   RuntimeSpec, TemplateContext, TemplateReplaceSource, UsedName, create_exports_object_referenced,
   property_access, to_normal_comment,
 };
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use swc_atoms::Atom;
 
 #[cacheable]

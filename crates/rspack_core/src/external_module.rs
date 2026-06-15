@@ -3,7 +3,7 @@ use std::{borrow::Cow, iter};
 use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_collections::{Identifiable, Identifier};
 use rspack_error::{Result, impl_empty_diagnosable_trait};
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_macros::impl_source_map_config;
 use rspack_util::{json_stringify_str, source_map::SourceMapKind};
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};

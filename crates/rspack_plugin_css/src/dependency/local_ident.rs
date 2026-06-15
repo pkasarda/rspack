@@ -5,7 +5,7 @@ use rspack_core::{
   DependencyType, ExportNameOrSpec, ExportSpec, ExportsInfoArtifact, ExportsOfExportsSpec,
   ExportsSpec, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 use crate::utils::{escape_css, replace_css_module_id_placeholder};
 

@@ -16,7 +16,7 @@ use rspack_core::{
 };
 pub use rspack_core::{CssExport, CssExports};
 use rspack_error::{Result, TWithDiagnosticArray};
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_util::{
   atom::Atom,
   fx_hash::{FxIndexMap, FxIndexSet},

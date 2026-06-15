@@ -3,7 +3,7 @@ use rspack_core::{
   Compilation, DependencyCodeGeneration, DependencyLocation, DependencyRange, DependencyTemplate,
   DependencyTemplateType, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 #[cacheable]
 #[derive(Debug, Clone)]

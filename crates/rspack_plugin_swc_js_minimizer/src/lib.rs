@@ -99,13 +99,13 @@ impl std::hash::Hash for MinimizerOptions {
   }
 }
 
-impl rspack_hash::RspackContentHashable for MinimizerOptions {
+impl rspack_hash::RspackHashable for MinimizerOptions {
   fn hash(&self, state: &mut RspackHash) {
     self
       .__format_cache
       .get_or_init(|| simd_json::to_string(&self.format).expect("Should be able to serialize"))
       .hash(state);
-    rspack_content_hash_bool_or_data_config(
+    rspack_hash_bool_or_data_config(
       state,
       self.__compress_cache.get_or_init(|| {
         self
@@ -114,7 +114,7 @@ impl rspack_hash::RspackContentHashable for MinimizerOptions {
           .map(|v| simd_json::to_string(v).expect("Should be able to serialize"))
       }),
     );
-    rspack_content_hash_bool_or_data_config(
+    rspack_hash_bool_or_data_config(
       state,
       self.__mangle_cache.get_or_init(|| {
         self
@@ -126,11 +126,11 @@ impl rspack_hash::RspackContentHashable for MinimizerOptions {
   }
 }
 
-fn rspack_content_hash_bool_or_data_config<T: rspack_hash::RspackContentHashable>(
+fn rspack_hash_bool_or_data_config<T: rspack_hash::RspackHashable>(
   state: &mut RspackHash,
   value: &BoolOrDataConfig<T>,
 ) {
-  use rspack_hash::RspackContentHashable;
+  use rspack_hash::RspackHashable;
 
   if let Some(value) = value.inner() {
     match value {
@@ -153,8 +153,8 @@ pub enum OptionWrapper<T: std::fmt::Debug + std::hash::Hash> {
   Custom(T),
 }
 
-impl<T: std::fmt::Debug + std::hash::Hash + rspack_hash::RspackContentHashable>
-  rspack_hash::RspackContentHashable for OptionWrapper<T>
+impl<T: std::fmt::Debug + std::hash::Hash + rspack_hash::RspackHashable> rspack_hash::RspackHashable
+  for OptionWrapper<T>
 {
   fn hash(&self, state: &mut RspackHash) {
     match self {
@@ -162,7 +162,7 @@ impl<T: std::fmt::Debug + std::hash::Hash + rspack_hash::RspackContentHashable>
       OptionWrapper::Disabled => "disabled".hash(state),
       OptionWrapper::Custom(value) => {
         "custom".hash(state);
-        rspack_hash::RspackContentHashable::hash(value, state);
+        rspack_hash::RspackHashable::hash(value, state);
       }
     }
   }
@@ -183,9 +183,9 @@ impl std::hash::Hash for ExtractComments {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(ExtractComments, condition, condition_flags, banner,);
+rspack_hash::impl_rspack_hashable!(ExtractComments, condition, condition_flags, banner,);
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   PluginOptions,
   test,
   include,
@@ -239,7 +239,7 @@ async fn js_chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  rspack_hash::RspackContentHashable::hash(&self.options, hasher);
+  rspack_hash::RspackHashable::hash(&self.options, hasher);
   Ok(())
 }
 

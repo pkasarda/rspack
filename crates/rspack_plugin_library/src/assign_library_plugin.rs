@@ -14,7 +14,7 @@ use rspack_core::{
   to_identifier,
 };
 use rspack_error::{Result, ToStringResultToRspackResultExt, error, error_bail};
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JavascriptModulesEmbedInRuntimeBailout, JavascriptModulesRender,

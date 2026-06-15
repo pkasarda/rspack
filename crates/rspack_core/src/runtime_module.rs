@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 use rspack_cacheable::cacheable;
 use rspack_collections::Identifier;
-use rspack_hash::{RspackContentHashable, RspackHash};
+use rspack_hash::{RspackHash, RspackHashable};
 
 use crate::{ChunkUkey, Compilation, Module, RuntimeCodeTemplate, RuntimeGlobals};
 
@@ -102,7 +102,7 @@ impl From<RuntimeModuleStage> for u32 {
   }
 }
 
-impl RspackContentHashable for RuntimeModuleStage {
+impl RspackHashable for RuntimeModuleStage {
   fn hash(&self, state: &mut RspackHash) {
     let stage: u32 = self.clone().into();
     stage.hash(state);

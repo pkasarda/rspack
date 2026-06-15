@@ -14,7 +14,7 @@ use rspack_cacheable::{
 use rspack_collections::{Identifiable, Identifier, IdentifierMap, IdentifierSet};
 use rspack_error::{Diagnosable, Result};
 use rspack_fs::ReadableFileSystem;
-use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackHash, RspackHashDigest, RspackHashable};
 use rspack_paths::ArcPathSet;
 use rspack_sources::BoxSource;
 use rspack_util::{
@@ -414,7 +414,7 @@ pub struct BuildMeta {
   pub side_effect_free: Option<bool>,
 }
 
-impl RspackContentHashable for BuildMetaExportsType {
+impl RspackHashable for BuildMetaExportsType {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       BuildMetaExportsType::Unset => "unset",
@@ -427,7 +427,7 @@ impl RspackContentHashable for BuildMetaExportsType {
   }
 }
 
-impl RspackContentHashable for ExportsType {
+impl RspackHashable for ExportsType {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       ExportsType::DefaultOnly => "default-only",
@@ -439,7 +439,7 @@ impl RspackContentHashable for ExportsType {
   }
 }
 
-impl RspackContentHashable for BuildMetaDefaultObject {
+impl RspackHashable for BuildMetaDefaultObject {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       BuildMetaDefaultObject::False => "false",
@@ -450,7 +450,7 @@ impl RspackContentHashable for BuildMetaDefaultObject {
   }
 }
 
-impl RspackContentHashable for ModuleArgument {
+impl RspackHashable for ModuleArgument {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       ModuleArgument::Module => "module",
@@ -460,7 +460,7 @@ impl RspackContentHashable for ModuleArgument {
   }
 }
 
-impl RspackContentHashable for ExportsArgument {
+impl RspackHashable for ExportsArgument {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       ExportsArgument::Exports => "exports",
@@ -470,9 +470,9 @@ impl RspackContentHashable for ExportsArgument {
   }
 }
 
-impl RspackContentHashable for BuildMeta {
+impl RspackHashable for BuildMeta {
   fn hash(&self, state: &mut RspackHash) {
-    rspack_hash::rspack_content_hash_update!(
+    rspack_hash::rspack_hash_update!(
       state,
       self.strict_esm_module,
       self.has_top_level_await,

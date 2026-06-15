@@ -42,14 +42,14 @@ pub struct Draft {
   pub custom_media: bool,
 }
 
-rspack_hash::impl_rspack_content_hashable!(Draft, custom_media,);
+rspack_hash::impl_rspack_hashable!(Draft, custom_media,);
 
 #[derive(Debug, Hash)]
 pub struct NonStandard {
   pub deep_selector_combinator: bool,
 }
 
-rspack_hash::impl_rspack_content_hashable!(NonStandard, deep_selector_combinator,);
+rspack_hash::impl_rspack_hashable!(NonStandard, deep_selector_combinator,);
 
 #[derive(Debug, Hash)]
 pub struct PseudoClasses {
@@ -60,7 +60,7 @@ pub struct PseudoClasses {
   pub focus_within: Option<String>,
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   PseudoClasses,
   hover,
   active,
@@ -110,7 +110,7 @@ impl std::hash::Hash for MinimizerOptions {
   }
 }
 
-impl rspack_hash::RspackContentHashable for MinimizerOptions {
+impl rspack_hash::RspackHashable for MinimizerOptions {
   fn hash(&self, state: &mut RspackHash) {
     self.error_recovery.hash(state);
     self.include.hash(state);
@@ -133,7 +133,7 @@ impl rspack_hash::RspackContentHashable for MinimizerOptions {
   }
 }
 
-rspack_hash::impl_rspack_content_hashable!(
+rspack_hash::impl_rspack_hashable!(
   PluginOptions,
   test,
   include,
@@ -161,7 +161,7 @@ async fn chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  rspack_hash::RspackContentHashable::hash(&self.options, hasher);
+  rspack_hash::RspackHashable::hash(&self.options, hasher);
   Ok(())
 }
 

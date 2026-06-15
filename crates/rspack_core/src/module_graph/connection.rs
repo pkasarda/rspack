@@ -140,7 +140,7 @@ pub enum ConnectionState {
   TransitiveOnly,
 }
 
-impl rspack_hash::RspackContentHashable for ConnectionState {
+impl rspack_hash::RspackHashable for ConnectionState {
   fn hash(&self, state: &mut RspackHash) {
     match self {
       ConnectionState::Active(value) => {

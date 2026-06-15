@@ -232,7 +232,7 @@ pub fn impl_runtime_module(
         runtime: Option<&::rspack_core::RuntimeSpec>,
       ) -> rspack_error::Result<::rspack_hash::RspackHashDigest> {
         use rspack_core::{NamedRuntimeModule, rspack_sources::Source};
-        use rspack_hash::RspackContentHashable;
+        use rspack_hash::RspackHashable;
         let mut hasher = rspack_hash::RspackHash::from(&compilation.options.output);
         self.name().hash(&mut hasher);
         self.stage().hash(&mut hasher);
