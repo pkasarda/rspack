@@ -1,4 +1,4 @@
-# Rspack Runtime Variables Design
+# Rspack runtime variables design
 
 ## Context
 
@@ -13,15 +13,15 @@ The RFC at `/Users/bytedance/Documents/团队/rspack/RFC-Rspack-Runtime-Variable
 
 When `experiments.runtimeMode` is `rspack`, Rspack-generated root-scope runtime internals should use rspack-style names:
 
-| webpack-style | rspack-style |
-| --- | --- |
-| `__webpack_require__` | `__rspack_require` |
-| `__webpack_modules__` | `__rspack_modules` |
+| webpack-style              | rspack-style            |
+| -------------------------- | ----------------------- |
+| `__webpack_require__`      | `__rspack_require`      |
+| `__webpack_modules__`      | `__rspack_modules`      |
 | `__webpack_module_cache__` | `__rspack_module_cache` |
-| `__webpack_exports__` | `__rspack_exports` |
-| `__webpack_module__` | `__rspack_module` |
-| `__webpack_exec__` | `__rspack_exec` |
-| `__rspack_context` | `__rspack_context` |
+| `__webpack_exports__`      | `__rspack_exports`      |
+| `__webpack_module__`       | `__rspack_module`       |
+| `__webpack_exec__`         | `__rspack_exec`         |
+| `__rspack_context`         | `__rspack_context`      |
 
 When `experiments.runtimeMode` is `webpack`, generated output must keep the existing webpack-style names.
 
@@ -56,7 +56,7 @@ Most root-scope render sites already call `runtime_template.render_runtime_varia
 - In rspack module rendering, module code should continue to use `__rspack_context`, `__rspack_context.r`, and `__rspack_context.<property>` where the existing runtime-context architecture requires it.
 - In rspack runtime/chunk rendering, root-scope internals such as require, modules, module cache, exports, module, and startup exec should render with rspack-style names.
 
-## Expected Implementation Areas
+## Expected implementation areas
 
 Primary files:
 

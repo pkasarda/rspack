@@ -1,4 +1,4 @@
-# Rspack Runtime Variables Implementation Plan
+# Rspack runtime variables implementation plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -10,7 +10,7 @@
 
 ---
 
-## File Structure
+## File structure
 
 - Modify `crates/rspack_core/src/runtime_globals.rs`
   - Owns `RuntimeVariable` names.
@@ -33,9 +33,10 @@
 
 Do not modify parser module-variable logic in `crates/rspack_plugin_javascript/src/parser_plugin/api_plugin.rs`. This PR intentionally keeps user-source recognition limited to `__webpack_*`.
 
-### Task 1: Write Failing Runtime-Mode Tests
+### Task 1: write failing Runtime-Mode tests
 
 **Files:**
+
 - Modify: `tests/rspack-test/configCases/runtime/runtime-mode-module-rendering/test.config.js`
 - Modify: `tests/rspack-test/configCases/runtime/runtime-mode-async-chunk/test.config.js`
 - Modify: `tests/rspack-test/configCases/runtime/runtime-mode-require-context/test.config.js`
@@ -45,42 +46,44 @@ Do not modify parser module-variable logic in `crates/rspack_plugin_javascript/s
 Replace `tests/rspack-test/configCases/runtime/runtime-mode-module-rendering/test.config.js` with:
 
 ```js
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
 /** @type {import("../../../..").TConfigCaseConfig} */
 module.exports = {
   afterExecute(options) {
     const source = fs.readFileSync(
-      path.resolve(options.output.path, "main.js"),
-      "utf-8",
+      path.resolve(options.output.path, 'main.js'),
+      'utf-8',
     );
 
-    expect(source).toContain("var __rspack_context={};");
-    expect(source).toContain("__rspack_context.d");
-    expect(source).toContain("__rspack_context.N");
-    expect(source).toContain("__rspack_context.d = definePropertyGetters;");
-    expect(source).toContain("__rspack_context.N = makeNamespaceObject;");
-    expect(source).toContain("module.exports, __rspack_context");
-    expect(source).toContain("definePropertyGetters =");
-    expect(source).toContain("makeNamespaceObject =");
+    expect(source).toContain('var __rspack_context={};');
+    expect(source).toContain('__rspack_context.d');
+    expect(source).toContain('__rspack_context.N');
+    expect(source).toContain('__rspack_context.d = definePropertyGetters;');
+    expect(source).toContain('__rspack_context.N = makeNamespaceObject;');
+    expect(source).toContain('module.exports, __rspack_context');
+    expect(source).toContain('definePropertyGetters =');
+    expect(source).toContain('makeNamespaceObject =');
 
     expect(source).toMatch(/function __rspack_require\s*\(\s*moduleId\s*\)/);
     expect(source).toMatch(/var __rspack_module_cache\s*=\s*\{\};/);
     expect(source).toMatch(/var __rspack_exports\s*=/);
-    expect(source).toContain("// The module cache");
-    expect(source).toContain("// The require function");
-    expect(source).toContain("// expose the modules object (__rspack_modules)");
+    expect(source).toContain('// The module cache');
+    expect(source).toContain('// The require function');
+    expect(source).toContain('// expose the modules object (__rspack_modules)');
 
-    expect(source).not.toContain("__webpack_require__");
-    expect(source).not.toContain("__webpack_modules__");
-    expect(source).not.toContain("__webpack_module_cache__");
-    expect(source).not.toContain("__webpack_exports__");
-    expect(source).not.toContain("// expose the modules object (__webpack_modules__)");
-    expect(source).not.toContain("__webpack_require__.d(__webpack_exports__");
-    expect(source).not.toContain("__webpack_require__.r(__webpack_exports__");
-    expect(source).not.toContain("__webpack_require__.d =");
-    expect(source).not.toContain("__webpack_require__.r =");
+    expect(source).not.toContain('__webpack_require__');
+    expect(source).not.toContain('__webpack_modules__');
+    expect(source).not.toContain('__webpack_module_cache__');
+    expect(source).not.toContain('__webpack_exports__');
+    expect(source).not.toContain(
+      '// expose the modules object (__webpack_modules__)',
+    );
+    expect(source).not.toContain('__webpack_require__.d(__webpack_exports__');
+    expect(source).not.toContain('__webpack_require__.r(__webpack_exports__');
+    expect(source).not.toContain('__webpack_require__.d =');
+    expect(source).not.toContain('__webpack_require__.r =');
   },
 };
 ```
@@ -90,19 +93,19 @@ module.exports = {
 In `tests/rspack-test/configCases/runtime/runtime-mode-async-chunk/test.config.js`, change the main-source root require assertion to:
 
 ```js
-    expect(mainSource).toContain("__rspack_context.r = __rspack_require;");
-    expect(mainSource).toMatch(/function __rspack_require\s*\(\s*moduleId\s*\)/);
-    expect(mainSource).toMatch(/var __rspack_module_cache\s*=\s*\{\};/);
-    expect(mainSource).not.toContain("__webpack_require__");
-    expect(mainSource).not.toContain("__webpack_module_cache__");
+expect(mainSource).toContain('__rspack_context.r = __rspack_require;');
+expect(mainSource).toMatch(/function __rspack_require\s*\(\s*moduleId\s*\)/);
+expect(mainSource).toMatch(/var __rspack_module_cache\s*=\s*\{\};/);
+expect(mainSource).not.toContain('__webpack_require__');
+expect(mainSource).not.toContain('__webpack_module_cache__');
 ```
 
 Keep the existing async chunk assertions:
 
 ```js
-    expect(asyncChunkSource).toContain("__rspack_context.d");
-    expect(asyncChunkSource).not.toContain("__rspack_install_runtime");
-    expect(asyncChunkSource).not.toContain("__webpack_require__.d");
+expect(asyncChunkSource).toContain('__rspack_context.d');
+expect(asyncChunkSource).not.toContain('__rspack_install_runtime');
+expect(asyncChunkSource).not.toContain('__webpack_require__.d');
 ```
 
 - [ ] **Step 3: Add root require checks to `runtime-mode-require-context`**
@@ -110,9 +113,9 @@ Keep the existing async chunk assertions:
 In `tests/rspack-test/configCases/runtime/runtime-mode-require-context/test.config.js`, keep the existing assertions and add:
 
 ```js
-    expect(source).toMatch(/function __rspack_require\s*\(\s*moduleId\s*\)/);
-    expect(source).toContain("__rspack_context.r = __rspack_require;");
-    expect(source).not.toContain("__webpack_require__");
+expect(source).toMatch(/function __rspack_require\s*\(\s*moduleId\s*\)/);
+expect(source).toContain('__rspack_context.r = __rspack_require;');
+expect(source).not.toContain('__webpack_require__');
 ```
 
 - [ ] **Step 4: Run focused tests and verify they fail for the intended reason**
@@ -140,9 +143,10 @@ git add tests/rspack-test/configCases/runtime/runtime-mode-module-rendering/test
 PATH="/Users/bytedance/.cache/codex-tools/pnpm-11.6.0/bin:/Users/bytedance/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PWD/node_modules/.bin:$PATH" git commit -m "test: cover rspack runtime variable names"
 ```
 
-### Task 2: Implement Mode-Aware RuntimeVariable Names
+### Task 2: implement Mode-Aware RuntimeVariable names
 
 **Files:**
+
 - Modify: `crates/rspack_core/src/runtime_globals.rs`
 - Modify: `crates/rspack_core/src/runtime_template.rs`
 
@@ -269,9 +273,10 @@ git add crates/rspack_core/src/runtime_globals.rs crates/rspack_core/src/runtime
 PATH="/Users/bytedance/.cache/codex-tools/pnpm-11.6.0/bin:/Users/bytedance/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PWD/node_modules/.bin:$PATH" git commit -m "fix(runtime): render rspack runtime variables"
 ```
 
-### Task 3: Scan Generated Output Strings and Adjust Remaining Tests
+### Task 3: scan generated output strings and adjust remaining tests
 
 **Files:**
+
 - Inspect: `crates/rspack_plugin_javascript/src/plugin/mod.rs`
 - Inspect: `crates/rspack_plugin_javascript/src/plugin/runtime_context.rs`
 - Inspect: `crates/rspack_plugin_esm_library/src/render.rs`
@@ -323,13 +328,13 @@ Expected: PASS.
 If a failure comes from expected generated output such as:
 
 ```js
-expect(source).toContain("__rspack_context.r = __webpack_require__;");
+expect(source).toContain('__rspack_context.r = __webpack_require__;');
 ```
 
 change it to:
 
 ```js
-expect(source).toContain("__rspack_context.r = __rspack_require;");
+expect(source).toContain('__rspack_context.r = __rspack_require;');
 ```
 
 If a failure comes from parser module-variable behavior, keep existing behavior and do not change parser logic.
@@ -343,9 +348,10 @@ PATH="/Users/bytedance/.cache/codex-tools/pnpm-11.6.0/bin:/Users/bytedance/.cach
 
 If there are no changes after the scan, skip this commit.
 
-### Task 4: Final Verification
+### Task 4: final verification
 
 **Files:**
+
 - No planned file edits.
 
 - [ ] **Step 1: Build Rust binding**
