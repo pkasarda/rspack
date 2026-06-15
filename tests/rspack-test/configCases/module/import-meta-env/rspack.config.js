@@ -5,32 +5,22 @@ const DefinePlugin = require('@rspack/core').DefinePlugin;
 
 process.env.WEBPACK_API_URL = 'https://api.example.com';
 
-/** @type {import("@rspack/core").Configuration} */
+/** @type {import('@rspack/core').Configuration[]} */
 module.exports = {
-  target: 'node12.18',
-  dotenv: true,
+  // Test 1: NODE_ENV from mode (WebpackOptionsApply)
+  mode: 'production',
+  // Test 3: DotenvPlugin from .env.test file
+  dotenv: {
+    template: ['.env.test']
+  },
   plugins: [
+    // Test 2: EnvironmentPlugin
     new EnvironmentPlugin({
-      AAA: 'aaa',
-      WEBPACK_API_URL: 'https://api.example.com',
+      ENV_VAR_FROM_ENV: 'from_environment_plugin'
     }),
+    // Test 4: DefinePlugin
     new DefinePlugin({
-      'import.meta.env': JSON.stringify({
-        AAA: 'aaa',
-        WEBPACK_API_URL: 'https://api.example.com',
-        NODE_ENV: 'production',
-      }),
-    }),
-  ],
-  experiments: {
-    outputModule: true,
-  },
-  output: {
-    module: true,
-    chunkFormat: 'module',
-  },
-  externals: {
-    fs: 'commonjs fs',
-    path: 'commonjs path',
-  },
+      'import.meta.env.CUSTOM_VAR': JSON.stringify('custom_value')
+    })
+  ]
 };

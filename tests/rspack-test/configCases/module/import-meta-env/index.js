@@ -1,33 +1,54 @@
-it("should work import.meta.env with EnvironmentPlugin", () => {
-	expect(import.meta.env.AAA).toBe(process.env.AAA);
+it('should expose NODE_ENV from mode (WebpackOptionsApply)', () => {
+  const env = import.meta.env;
+  expect(env.NODE_ENV).toBe('production');
 });
 
-it("should work import.meta.env with DotenvPlugin", () => {
-	expect(import.meta.env.WEBPACK_API_URL).toBe(process.env.WEBPACK_API_URL);
+it('should expose variables from EnvironmentPlugin', () => {
+  const env = import.meta.env;
+  expect(env.ENV_VAR_FROM_ENV).toBe('from_environment_plugin');
 });
 
-it("import.meta.env behaves like process.env", async done => {
-	try {
-		const importMetaEnv = import.meta.env;
-		importMetaEnv;
-		const processEnv = process.env;
-		processEnv;
-		const UNKNOWN_PROPERTY = import.meta.env.UNKNOWN_PROPERTY;
-		UNKNOWN_PROPERTY;
-		const UNKNOWN_PROPERTY_2 = process.env.UNKNOWN_PROPERTY_2;
-		UNKNOWN_PROPERTY_2;
-		typeof import.meta.env;
-		typeof process.env;
+it('should expose variables from DotenvPlugin', () => {
+  const env = import.meta.env;
+  expect(env.WEBPACK_DOTENV_VAR).toBe('from_dotenv');
+});
 
-		const { env } = import.meta;
-		env;
-	} catch (_e) {
-		// ignore
-	}
-	const fs = await eval("import('fs')");
-	const path = await eval("import('path')");
-	expect(fs.readFileSync(__filename, "utf-8")).toMatchFileSnapshotSync(
-		path.join(__SNAPSHOT__, "index.mjs.txt")
-	);
-	done();
+it('should expose variables from DefinePlugin', () => {
+  const env = import.meta.env;
+  expect(env.CUSTOM_VAR).toBe('custom_value');
+});
+
+it('should support typeof import.meta.env', () => {
+  expect(typeof import.meta.env).toBe('object');
+});
+
+it('should evaluate typeof import.meta.env as \'object\'', () => {
+  const typeofEnv = typeof import.meta.env;
+  expect(typeofEnv).toBe('object');
+});
+
+it('should treat import.meta.env as truthy', () => {
+  if (import.meta.env) {
+    expect(true).toBe(true);
+  } else {
+    throw new Error('import.meta.env should be truthy');
+  }
+});
+
+
+it('should treat import.meta.env.NOT_EXIST as falsy', () => {
+  if (import.meta.env.NOT_EXIST) {
+    throw new Error('import.meta.env should be falsy');
+  } else {
+    expect(true).toBe(true);
+  }
+});
+
+it('should treat import.meta.env.NOT_EXIST as falsy', () => {
+  const NOT_EXIST = import.meta.env.NOT_EXIST;
+  if (NOT_EXIST) {
+    throw new Error('import.meta.env should be falsy');
+  } else {
+    expect(true).toBe(true);
+  }
 });
