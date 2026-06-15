@@ -769,6 +769,18 @@ impl DependencyConditionFn for ESMImportSpecifierDependencyCondition {
       .expect("should be ESMImportSpecifierDependency");
     match dependency.used_by_exports.as_ref() {
       Some(used_by_exports)
+        if matches!(used_by_exports.condition, UsedByExportsCondition::Set(_))
+          && !used_by_exports.deferred_pure_checks.is_empty() =>
+      {
+        connection_active_inline_value_for_esm_import_specifier(
+          dependency,
+          connection,
+          runtime,
+          module_graph,
+          exports_info_artifact,
+        )
+      }
+      Some(used_by_exports)
         if matches!(
           used_by_exports.condition,
           UsedByExportsCondition::Bool(false)
