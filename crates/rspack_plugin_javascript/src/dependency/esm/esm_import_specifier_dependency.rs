@@ -543,7 +543,7 @@ impl ESMImportSpecifierDependencyTemplate {
       mg,
       &compilation.module_graph_cache_artifact,
       &compilation.exports_info_artifact,
-      self_module.build_meta().strict_esm_module,
+      self_module.build_meta().strict_esm_module(),
     );
     let first = ids
       .first()
@@ -698,7 +698,7 @@ impl DependencyTemplate for ESMImportSpecifierDependencyTemplate {
             .compilation
             .module_graph_cache_artifact,
           &code_generatable_context.compilation.exports_info_artifact,
-          self_module.build_meta().strict_esm_module,
+          self_module.build_meta().strict_esm_module(),
         );
         if matches!(
           exports_type,

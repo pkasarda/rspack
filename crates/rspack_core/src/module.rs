@@ -404,16 +404,11 @@ pub enum ExportsArgument {
 #[derive(Debug, Default, Clone, Serialize, rspack_hash::RspackHashable)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildMeta {
-  #[serde(skip_serializing_if = "Option::is_none")]
   pub strict_esm_module: Option<bool>,
   // same as is_async https://github.com/webpack/webpack/blob/3919c844eca394d73ca930e4fc5506fb86e2b094/lib/Module.js#L107
-  #[serde(skip_serializing_if = "Option::is_none")]
   pub has_top_level_await: Option<bool>,
-  #[serde(skip_serializing_if = "Option::is_none")]
   pub esm: Option<bool>,
-  #[serde(skip_serializing_if = "Option::is_none")]
   pub exports_type: Option<BuildMetaExportsType>,
-  #[serde(skip_serializing_if = "Option::is_none")]
   pub default_object: Option<BuildMetaDefaultObject>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub side_effect_free: Option<bool>,

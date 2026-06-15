@@ -588,7 +588,7 @@ impl ESMExportImportedSpecifierDependency {
 
         if self.phase.is_defer()
           && let Some(target_module) = target_module
-          && !target_module.build_meta().has_top_level_await
+          && !target_module.build_meta().has_top_level_await()
         {
           let exports_type = get_exports_type(
             mg,
@@ -633,7 +633,7 @@ impl ESMExportImportedSpecifierDependency {
 
         if self.phase.is_defer()
           && let Some(target_module) = target_module
-          && !target_module.build_meta().has_top_level_await
+          && !target_module.build_meta().has_top_level_await()
         {
           let exports_type = get_exports_type(
             mg,
