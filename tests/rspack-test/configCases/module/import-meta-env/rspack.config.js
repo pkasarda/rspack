@@ -5,6 +5,13 @@ const DefinePlugin = require('@rspack/core').DefinePlugin;
 
 process.env.WEBPACK_API_URL = 'https://api.example.com';
 
+const importMetaEnv = {
+  NODE_ENV: 'production',
+  ENV_VAR_FROM_ENV: 'from_environment_plugin',
+  WEBPACK_DOTENV_VAR: 'from_dotenv',
+  CUSTOM_VAR: 'custom_value',
+};
+
 /** @type {import('@rspack/core').Configuration[]} */
 module.exports = {
   // Test 1: NODE_ENV from mode (WebpackOptionsApply)
@@ -20,6 +27,7 @@ module.exports = {
     }),
     // Test 4: DefinePlugin
     new DefinePlugin({
+      'import.meta.env': JSON.stringify(importMetaEnv),
       'import.meta.env.CUSTOM_VAR': JSON.stringify('custom_value'),
     }),
   ],

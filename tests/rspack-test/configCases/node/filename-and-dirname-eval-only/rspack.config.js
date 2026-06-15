@@ -20,6 +20,16 @@ module.exports = [
     },
   },
   {
+    target: 'node24',
+    node: {
+      __filename: 'eval-only',
+      __dirname: 'eval-only',
+    },
+    output: {
+      module: true,
+    },
+  },
+  {
     target: 'web',
     node: {
       __filename: 'eval-only',
