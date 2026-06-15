@@ -30,6 +30,10 @@ it("should normalize direct file URL dot segments", () => {
 it("should accept normalized file URL object spellings", () => {
 \texpect(_createRequire(new URL(${JSON.stringify(pathToFileURL(path.join(__dirname, 'foo/c.js')).href.replace('file:///', 'file:/'))}, import.meta.url))("./a")).toBe(4);
 });
+
+it("should create require from relative URL object with file URL string base", () => {
+\texpect(_createRequire(new URL("./foo/c.js", ${JSON.stringify(pathToFileURL(path.join(__dirname, 'index.js')).href)}))("./a")).toBe(4);
+});
 ` +
     (process.platform === 'win32'
       ? '\n'

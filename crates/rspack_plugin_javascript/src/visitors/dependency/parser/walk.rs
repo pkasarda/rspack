@@ -801,7 +801,10 @@ impl JavascriptParser<'_> {
           VariableInfoFlags::NORMAL,
           None,
         );
-        self.definitions_db.set(declared_scope, name.clone(), info);
+        let updated = self
+          .definitions_db
+          .update_existing(declared_scope, name, info);
+        debug_assert!(updated);
       }
     }
   }
