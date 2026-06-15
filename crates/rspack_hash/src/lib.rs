@@ -116,6 +116,13 @@ impl MergeFrom for HashSalt {
   }
 }
 
+/// Hasher used for webpack-compatible content hashes.
+///
+/// `RspackHash` is the stateful writer behind output hashes such as full hash,
+/// chunk hash, content hash and module/runtime hashes that affect generated
+/// assets or persistent cache correctness. Inputs should be written through
+/// [`RspackHashable`] so the serialized form can follow webpack content-hash
+/// semantics instead of Rust collection-key hashing semantics.
 #[derive(Clone)]
 pub enum RspackHash {
   Xxhash64(Box<Xxh64>),
@@ -123,6 +130,20 @@ pub enum RspackHash {
   SHA256(Box<sha2::Sha256>),
 }
 
+/// Content-hash input contract for values that participate in `RspackHash`.
+///
+/// This trait is intentionally separate from [`std::hash::Hash`]. `Hash` is for
+/// hash-map/set keys and is free to optimize around Rust data-structure needs,
+/// including implementation details that may change with the standard library
+/// or with local keying requirements. `RspackHashable` is for stable,
+/// webpack-aligned content hashing: implement it only for data that should
+/// affect emitted asset hashes, runtime/module hashes, or persistent cache
+/// content keys.
+///
+/// Keeping the two traits separate lets Rspack tune key hashing independently
+/// without changing content hash behavior, and lets content hashing encode the
+/// same logical inputs webpack uses rather than the shape of Rust data
+/// structures.
 pub trait RspackHashable {
   fn hash(&self, state: &mut RspackHash);
 }
