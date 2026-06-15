@@ -15,7 +15,7 @@ use rspack_core::{
   create_exports_object_referenced, property_access, to_normal_comment,
 };
 use rspack_error::Diagnostic;
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_util::json_stringify_str;
 use swc_atoms::Atom;
 
@@ -393,8 +393,8 @@ impl DependencyCodeGeneration for ESMImportSpecifierDependency {
     if let Some(UsedName::Inlined(inlined)) =
       exports_info.get_used_name(&compilation.exports_info_artifact, runtime, ids)
     {
-      hasher.update(&ids);
-      hasher.update(&inlined);
+      ids.hash(hasher);
+      inlined.hash(hasher);
     }
   }
 

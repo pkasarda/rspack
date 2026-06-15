@@ -4,7 +4,7 @@ use itertools::Itertools;
 use rspack_core::{
   AsyncDependenciesBlock, ConstDependency, DependencyRange, EntryOptions, GroupOptions,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_util::SpanExt;
 use rustc_hash::{FxHashMap, FxHashSet};
 use swc_atoms::Atom;
@@ -82,10 +82,8 @@ fn add_dependencies(
 ) {
   let output_options = &parser.compiler_options.output;
   let mut hasher = RspackHash::from(output_options);
-  {
-    hasher.update(parser.module_identifier.as_str());
-    hasher.update(&parser.worker_index);
-  }
+  parser.module_identifier.hash(&mut hasher);
+  parser.worker_index.hash(&mut hasher);
   parser.worker_index += 1;
   let digest = hasher.digest(&output_options.hash_digest);
   let runtime = digest

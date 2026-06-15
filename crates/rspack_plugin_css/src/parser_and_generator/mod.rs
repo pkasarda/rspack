@@ -16,7 +16,7 @@ use rspack_core::{
 };
 pub use rspack_core::{CssExport, CssExports};
 use rspack_error::{Result, TWithDiagnosticArray};
-use rspack_hash::{RspackHash, RspackHashDigest};
+use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_util::{
   atom::Atom,
   fx_hash::{FxIndexMap, FxIndexSet},
@@ -357,11 +357,7 @@ impl ParserAndGenerator for CssParserAndGenerator {
     _runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    {
-      hasher.update(&Self::es_module(css_generator_options(
-        module.get_generator_options(),
-      )));
-    }
+    Self::es_module(css_generator_options(module.get_generator_options())).hash(&mut hasher);
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 }

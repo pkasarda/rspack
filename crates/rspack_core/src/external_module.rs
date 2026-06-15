@@ -3,7 +3,7 @@ use std::{borrow::Cow, iter};
 use rspack_cacheable::{cacheable, cacheable_dyn};
 use rspack_collections::{Identifiable, Identifier};
 use rspack_error::{Result, impl_empty_diagnosable_trait};
-use rspack_hash::{RspackHash, RspackHashDigest};
+use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_macros::impl_source_map_config;
 use rspack_util::{json_stringify_str, source_map::SourceMapKind};
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};
@@ -1195,9 +1195,7 @@ impl Module for ExternalModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    {
-      hasher.update(self.id.as_str());
-    }
+    self.id.as_str().hash(&mut hasher);
     let side_effects_state_artifact = &compilation
       .build_module_graph_artifact
       .side_effects_state_artifact;
@@ -1207,10 +1205,8 @@ impl Module for ExternalModule {
       side_effects_state_artifact,
       &compilation.exports_info_artifact,
     );
-    {
-      hasher.update(&is_optional);
-      module_update_hash(self, &mut hasher, compilation, runtime);
-    }
+    is_optional.hash(&mut hasher);
+    module_update_hash(self, &mut hasher, compilation, runtime);
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 }

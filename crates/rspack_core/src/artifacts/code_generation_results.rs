@@ -6,7 +6,9 @@ use std::{
 
 use anymap::CloneAny;
 use rspack_collections::IdentifierMap;
-use rspack_hash::{HashDigest, HashFunction, HashSalt, RspackHash, RspackHashDigest};
+use rspack_hash::{
+  HashDigest, HashFunction, HashSalt, RspackContentHashable, RspackHash, RspackHashDigest,
+};
 use rspack_sources::BoxSource;
 use rspack_util::atom::Atom;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};
@@ -165,11 +167,11 @@ impl CodeGenerationResult {
   ) {
     let mut hasher = RspackHash::with_salt(hash_function, hash_salt);
     for (source_type, source) in self.inner.as_ref() {
-      hasher.update(source_type);
+      source_type.hash(&mut hasher);
       hasher.write(source.source().as_bytes());
     }
-    hasher.update(&self.chunk_init_fragments);
-    hasher.update(&self.runtime_requirements);
+    self.chunk_init_fragments.hash(&mut hasher);
+    self.runtime_requirements.hash(&mut hasher);
     self.hash = Some(hasher.digest(hash_digest));
   }
 
@@ -185,12 +187,12 @@ impl CodeGenerationResult {
     hash_salt: &HashSalt,
   ) {
     let mut hasher = RspackHash::with_salt(hash_function, hash_salt);
-    hasher.update(runtime_hash);
+    runtime_hash.hash(&mut hasher);
     for source_type in self.inner.as_ref().keys() {
-      hasher.update(source_type);
+      source_type.hash(&mut hasher);
     }
-    hasher.update(&self.chunk_init_fragments);
-    hasher.update(&self.runtime_requirements);
+    self.chunk_init_fragments.hash(&mut hasher);
+    self.runtime_requirements.hash(&mut hasher);
     self.hash = Some(hasher.digest(hash_digest));
   }
 }

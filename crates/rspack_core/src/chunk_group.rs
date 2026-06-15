@@ -7,7 +7,7 @@ use itertools::Itertools;
 use rspack_cacheable::cacheable;
 use rspack_collections::IdentifierMap;
 use rspack_error::{Result, error};
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_util::fx_hash::FxIndexSet;
 use rustc_hash::{FxHashMap as HashMap, FxHashSet};
 
@@ -442,11 +442,11 @@ impl EntryRuntime {
   }
 }
 
-impl RspackContentHash for EntryRuntime {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for EntryRuntime {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
-      EntryRuntime::String(s) => s.rspack_content_hash(state),
-      EntryRuntime::False => "false".rspack_content_hash(state),
+      EntryRuntime::String(s) => s.hash(state),
+      EntryRuntime::False => "false".hash(state),
     }
   }
 }
@@ -510,7 +510,7 @@ impl EntryOptions {
   }
 }
 
-rspack_hash::impl_rspack_content_hash!(
+rspack_hash::impl_rspack_content_hashable!(
   EntryOptions,
   name,
   runtime,
@@ -569,7 +569,7 @@ impl ChunkGroupOptions {
   }
 }
 
-rspack_hash::impl_rspack_content_hash!(
+rspack_hash::impl_rspack_content_hashable!(
   ChunkGroupOptions,
   name,
   preload_order,
@@ -584,16 +584,16 @@ pub enum GroupOptions {
   ChunkGroup(ChunkGroupOptions),
 }
 
-impl RspackContentHash for GroupOptions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for GroupOptions {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       GroupOptions::Entrypoint(options) => {
-        "entrypoint".rspack_content_hash(state);
-        options.rspack_content_hash(state);
+        "entrypoint".hash(state);
+        options.hash(state);
       }
       GroupOptions::ChunkGroup(options) => {
-        "chunk-group".rspack_content_hash(state);
-        options.rspack_content_hash(state);
+        "chunk-group".hash(state);
+        options.hash(state);
       }
     }
   }

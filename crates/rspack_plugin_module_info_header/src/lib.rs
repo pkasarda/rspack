@@ -10,7 +10,7 @@ use rspack_core::{
   to_comment_with_nl,
 };
 use rspack_error::Result;
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_css::{
   CssPlugin,
@@ -204,8 +204,8 @@ async fn chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  hasher.update("ModuleInfoHeaderPlugin");
-  hasher.update("1");
+  "ModuleInfoHeaderPlugin".hash(hasher);
+  "1".hash(hasher);
 
   Ok(())
 }

@@ -26,7 +26,7 @@ use rspack_core::{
   property_name, render_make_deferred_namespace_mode_from_exports_type, to_normal_comment,
 };
 use rspack_error::{Diagnostic, Error, Severity};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_util::json_stringify;
 use rustc_hash::{FxHashSet as HashSet, FxHasher};
 use swc_atoms::Atom;
@@ -1171,9 +1171,9 @@ impl DependencyCodeGeneration for ESMExportImportedSpecifierDependency {
       if let Some(UsedName::Inlined(inlined)) =
         exports_info.get_used_name(&compilation.exports_info_artifact, runtime, &item.ids)
       {
-        hasher.update(&item.name);
-        hasher.update(&item.ids);
-        hasher.update(&inlined);
+        item.name.hash(hasher);
+        item.ids.hash(hasher);
+        inlined.hash(hasher);
       }
     }
   }

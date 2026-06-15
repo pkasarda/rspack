@@ -15,7 +15,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, CachedSource, ConcatSource, ReplaceSource, Source, SourceExt},
 };
 use rspack_error::{Diagnostic, Result, ToStringResultToRspackResultExt};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::plugin_hook;
 use rspack_plugin_runtime::is_enabled_for_chunk;
 use rspack_util::fx_hash::FxDashMap;
@@ -422,8 +422,8 @@ async fn content_hash(
     })
     .for_each(|(current, id)| {
       if let Some(current) = current {
-        hasher.update(current);
-        hasher.update(&id);
+        current.hash(hasher);
+        id.hash(hasher);
       }
     });
 

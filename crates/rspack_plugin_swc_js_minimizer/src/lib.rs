@@ -1,5 +1,5 @@
 use std::{
-  hash::{Hash, Hasher},
+  hash::Hasher,
   path::Path,
   sync::{LazyLock, Mutex, mpsc},
 };
@@ -21,7 +21,7 @@ use rspack_core::{
   },
 };
 use rspack_error::{Diagnostic, Result};
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::RspackHash;
 use rspack_hook::{plugin, plugin_hook};
 use rspack_javascript_compiler::JavaScriptCompiler;
 use rspack_plugin_javascript::{ExtractedCommentsInfo, JavascriptModulesChunkHash, JsPlugin};
@@ -99,12 +99,12 @@ impl std::hash::Hash for MinimizerOptions {
   }
 }
 
-impl RspackContentHash for MinimizerOptions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl rspack_hash::RspackContentHashable for MinimizerOptions {
+  fn hash(&self, state: &mut RspackHash) {
     self
       .__format_cache
       .get_or_init(|| simd_json::to_string(&self.format).expect("Should be able to serialize"))
-      .rspack_content_hash(state);
+      .hash(state);
     rspack_content_hash_bool_or_data_config(
       state,
       self.__compress_cache.get_or_init(|| {
@@ -126,39 +126,43 @@ impl RspackContentHash for MinimizerOptions {
   }
 }
 
-fn rspack_content_hash_bool_or_data_config<T: RspackContentHash>(
+fn rspack_content_hash_bool_or_data_config<T: rspack_hash::RspackContentHashable>(
   state: &mut RspackHash,
   value: &BoolOrDataConfig<T>,
 ) {
+  use rspack_hash::RspackContentHashable;
+
   if let Some(value) = value.inner() {
     match value {
       BoolOr::Bool(value) => {
-        "bool".rspack_content_hash(state);
-        value.rspack_content_hash(state);
+        "bool".hash(state);
+        value.hash(state);
       }
       BoolOr::Data(value) => {
-        "data".rspack_content_hash(state);
-        value.rspack_content_hash(state);
+        "data".hash(state);
+        value.hash(state);
       }
     }
   }
 }
 
 #[derive(Debug, Hash)]
-pub enum OptionWrapper<T: std::fmt::Debug + Hash> {
+pub enum OptionWrapper<T: std::fmt::Debug + std::hash::Hash> {
   Default,
   Disabled,
   Custom(T),
 }
 
-impl<T: std::fmt::Debug + Hash + RspackContentHash> RspackContentHash for OptionWrapper<T> {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl<T: std::fmt::Debug + std::hash::Hash + rspack_hash::RspackContentHashable>
+  rspack_hash::RspackContentHashable for OptionWrapper<T>
+{
+  fn hash(&self, state: &mut RspackHash) {
     match self {
-      OptionWrapper::Default => "default".rspack_content_hash(state),
-      OptionWrapper::Disabled => "disabled".rspack_content_hash(state),
+      OptionWrapper::Default => "default".hash(state),
+      OptionWrapper::Disabled => "disabled".hash(state),
       OptionWrapper::Custom(value) => {
-        "custom".rspack_content_hash(state);
-        value.rspack_content_hash(state);
+        "custom".hash(state);
+        rspack_hash::RspackContentHashable::hash(value, state);
       }
     }
   }
@@ -171,7 +175,7 @@ pub struct ExtractComments {
   pub banner: OptionWrapper<String>,
 }
 
-impl Hash for ExtractComments {
+impl std::hash::Hash for ExtractComments {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     self.condition.as_str().hash(state);
     self.condition_flags.as_str().hash(state);
@@ -179,9 +183,9 @@ impl Hash for ExtractComments {
   }
 }
 
-rspack_hash::impl_rspack_content_hash!(ExtractComments, condition, condition_flags, banner,);
+rspack_hash::impl_rspack_content_hashable!(ExtractComments, condition, condition_flags, banner,);
 
-rspack_hash::impl_rspack_content_hash!(
+rspack_hash::impl_rspack_content_hashable!(
   PluginOptions,
   test,
   include,
@@ -206,6 +210,8 @@ pub struct SwcJsMinimizerRspackPlugin {
 
 impl SwcJsMinimizerRspackPlugin {
   pub fn new(options: PluginOptions) -> Self {
+    use std::hash::Hash;
+
     let mut hasher = FxHasher::default();
     PLUGIN_NAME.hash(&mut hasher);
     options.hash(&mut hasher);
@@ -233,7 +239,7 @@ async fn js_chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  hasher.update(&self.options);
+  rspack_hash::RspackContentHashable::hash(&self.options, hasher);
   Ok(())
 }
 
@@ -302,6 +308,8 @@ async fn process_assets(&self, compilation: &mut Compilation) -> Result<()> {
         // Compute cache key and check persistent cache (only when enabled)
         let cache_key = if let Some(cache) = &minimize_persistent_cache {
           let key = {
+            use std::hash::Hash;
+
             let mut hasher = FxHasher::default();
             original_source.buffer().hash(&mut hasher);
             self.options_hash.hash(&mut hasher);

@@ -9,7 +9,7 @@ use rspack_core::{
   ExportsInfoArtifact, ExtendedReferencedExport, FactorizeInfo, ModuleDependency, ModuleGraph,
   ModuleGraphCacheArtifact, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -107,7 +107,7 @@ impl DependencyCodeGeneration for WorkerDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.public_path);
+    self.public_path.hash(hasher);
   }
 }
 

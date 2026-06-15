@@ -45,4 +45,4 @@ impl DependencyRange {
   }
 }
 
-rspack_hash::impl_rspack_content_hash!(DependencyRange, start, end,);
+rspack_hash::impl_rspack_content_hashable!(DependencyRange, start, end,);

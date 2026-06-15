@@ -8,7 +8,7 @@ use rspack_core::{
   impl_source_map_config, module_update_hash, rspack_sources::BoxSource,
 };
 use rspack_error::{Result, impl_empty_diagnosable_trait};
-use rspack_hash::{RspackHash, RspackHashDigest};
+use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_util::itoa;
 
 use crate::{
@@ -84,13 +84,11 @@ impl CssModule {
 
   fn compute_hash(&self, options: &CompilerOptions) -> RspackHashDigest {
     let mut hasher = RspackHash::from(&options.output);
-    {
-      hasher.update(&self.content);
-      hasher.update(&self.css_layer);
-      hasher.update(&self.supports);
-      hasher.update(&self.media);
-      hasher.update(&self.source_map);
-    }
+    self.content.hash(&mut hasher);
+    self.css_layer.hash(&mut hasher);
+    self.supports.hash(&mut hasher);
+    self.media.hash(&mut hasher);
+    self.source_map.hash(&mut hasher);
 
     hasher.digest(&options.output.hash_digest)
   }
@@ -191,10 +189,8 @@ impl Module for CssModule {
     runtime: Option<&RuntimeSpec>,
   ) -> Result<RspackHashDigest> {
     let mut hasher = RspackHash::from(&compilation.options.output);
-    {
-      module_update_hash(self, &mut hasher, compilation, runtime);
-      hasher.update(&self.build_info.hash);
-    }
+    module_update_hash(self, &mut hasher, compilation, runtime);
+    self.build_info.hash.hash(&mut hasher);
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 

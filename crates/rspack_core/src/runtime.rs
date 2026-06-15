@@ -4,7 +4,7 @@ use rspack_cacheable::{
   cacheable,
   with::{AsRefStr, AsVec},
 };
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::RspackHash;
 #[cfg(allocative)]
 use rspack_util::allocative;
 use rustc_hash::FxHashMap;
@@ -21,7 +21,7 @@ pub struct RuntimeSpec {
   key: String,
 }
 
-rspack_hash::impl_rspack_content_hash!(RuntimeSpec, key,);
+rspack_hash::impl_rspack_content_hashable!(RuntimeSpec, key,);
 
 impl std::fmt::Display for RuntimeSpec {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -213,11 +213,11 @@ impl std::hash::Hash for RuntimeCondition {
   }
 }
 
-impl RspackContentHash for RuntimeCondition {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl rspack_hash::RspackContentHashable for RuntimeCondition {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
-      RuntimeCondition::Boolean(value) => value.rspack_content_hash(state),
-      RuntimeCondition::Spec(spec) => spec.rspack_content_hash(state),
+      RuntimeCondition::Boolean(value) => value.hash(state),
+      RuntimeCondition::Spec(spec) => spec.hash(state),
     }
   }
 }

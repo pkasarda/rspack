@@ -37,7 +37,7 @@ use rspack_core::{
   split_readable_identifier,
 };
 use rspack_error::{Result, ToStringResultToRspackResultExt};
-use rspack_hash::{RspackHash, RspackHashDigest};
+use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_hook::plugin;
 use rspack_util::SpanExt;
 #[cfg(allocative)]
@@ -1453,9 +1453,9 @@ var {} = {{}};
       startup,
       allow_inline_startup,
     } = Self::render_bootstrap(chunk_ukey, compilation, &runtime_template).await?;
-    hasher.update(&header);
-    hasher.update(&startup);
-    hasher.update(&allow_inline_startup);
+    header.hash(hasher);
+    startup.hash(hasher);
+    allow_inline_startup.hash(hasher);
     Ok(())
   }
 }

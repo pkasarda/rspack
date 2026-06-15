@@ -3,7 +3,7 @@ use rspack_core::{
   Compilation, DependencyCodeGeneration, DependencyRange, DependencyTemplate,
   DependencyTemplateType, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -29,7 +29,7 @@ impl DependencyCodeGeneration for RequireMainDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.range);
+    self.range.hash(hasher);
   }
 }
 

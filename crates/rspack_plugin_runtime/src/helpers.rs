@@ -11,7 +11,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, RawStringSource, SourceExt},
 };
 use rspack_error::{Result, error};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_plugin_javascript::runtime::stringify_chunks_to_array;
 use rspack_util::fx_hash::FxIndexSet;
 use rustc_hash::FxHashSet as HashSet;
@@ -47,7 +47,7 @@ pub fn update_hash_for_entry_startup(
         ChunkGraph::get_module_id(&compilation.module_ids_artifact, module.module_identifier)
       })
     {
-      hasher.update(&module_id);
+      module_id.hash(hasher);
     }
 
     if let Some(runtime_chunk) = compilation
@@ -67,7 +67,7 @@ pub fn update_hash_for_entry_startup(
           .chunk_by_ukey
           .get(&chunk_ukey)
         {
-          hasher.update(&chunk.id());
+          chunk.id().hash(hasher);
         }
       }
     }

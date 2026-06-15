@@ -1,6 +1,5 @@
 use std::{
   collections::HashSet,
-  hash::Hash,
   sync::{Arc, LazyLock, RwLock},
 };
 
@@ -21,7 +20,7 @@ use rspack_core::{
   },
 };
 use rspack_error::{Diagnostic, Result, ToStringResultToRspackResultExt};
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::RspackHash;
 use rspack_hook::{plugin, plugin_hook};
 use rspack_util::asset_condition::{AssetConditions, AssetConditionsObject, match_object};
 use thread_local::ThreadLocal;
@@ -43,14 +42,14 @@ pub struct Draft {
   pub custom_media: bool,
 }
 
-rspack_hash::impl_rspack_content_hash!(Draft, custom_media,);
+rspack_hash::impl_rspack_content_hashable!(Draft, custom_media,);
 
 #[derive(Debug, Hash)]
 pub struct NonStandard {
   pub deep_selector_combinator: bool,
 }
 
-rspack_hash::impl_rspack_content_hash!(NonStandard, deep_selector_combinator,);
+rspack_hash::impl_rspack_content_hashable!(NonStandard, deep_selector_combinator,);
 
 #[derive(Debug, Hash)]
 pub struct PseudoClasses {
@@ -61,7 +60,7 @@ pub struct PseudoClasses {
   pub focus_within: Option<String>,
 }
 
-rspack_hash::impl_rspack_content_hash!(
+rspack_hash::impl_rspack_content_hashable!(
   PseudoClasses,
   hover,
   active,
@@ -82,7 +81,7 @@ pub struct MinimizerOptions {
   pub unused_symbols: Vec<String>,
 }
 
-impl Hash for MinimizerOptions {
+impl std::hash::Hash for MinimizerOptions {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     self.error_recovery.hash(state);
     self.include.hash(state);
@@ -111,30 +110,30 @@ impl Hash for MinimizerOptions {
   }
 }
 
-impl RspackContentHash for MinimizerOptions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.error_recovery.rspack_content_hash(state);
-    self.include.rspack_content_hash(state);
-    self.exclude.rspack_content_hash(state);
-    self.drafts.rspack_content_hash(state);
-    self.non_standard.rspack_content_hash(state);
-    self.unused_symbols.rspack_content_hash(state);
-    self.pseudo_classes.rspack_content_hash(state);
+impl rspack_hash::RspackContentHashable for MinimizerOptions {
+  fn hash(&self, state: &mut RspackHash) {
+    self.error_recovery.hash(state);
+    self.include.hash(state);
+    self.exclude.hash(state);
+    self.drafts.hash(state);
+    self.non_standard.hash(state);
+    self.unused_symbols.hash(state);
+    self.pseudo_classes.hash(state);
     if let Some(targets) = &self.targets {
-      targets.android.rspack_content_hash(state);
-      targets.chrome.rspack_content_hash(state);
-      targets.edge.rspack_content_hash(state);
-      targets.firefox.rspack_content_hash(state);
-      targets.ie.rspack_content_hash(state);
-      targets.ios_saf.rspack_content_hash(state);
-      targets.opera.rspack_content_hash(state);
-      targets.safari.rspack_content_hash(state);
-      targets.samsung.rspack_content_hash(state);
+      targets.android.hash(state);
+      targets.chrome.hash(state);
+      targets.edge.hash(state);
+      targets.firefox.hash(state);
+      targets.ie.hash(state);
+      targets.ios_saf.hash(state);
+      targets.opera.hash(state);
+      targets.safari.hash(state);
+      targets.samsung.hash(state);
     }
   }
 }
 
-rspack_hash::impl_rspack_content_hash!(
+rspack_hash::impl_rspack_content_hashable!(
   PluginOptions,
   test,
   include,
@@ -162,7 +161,7 @@ async fn chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  hasher.update(&self.options);
+  rspack_hash::RspackContentHashable::hash(&self.options, hasher);
   Ok(())
 }
 

@@ -5,7 +5,7 @@ use rspack_core::{
   rspack_sources::{ConcatSource, RawStringSource, SourceExt},
 };
 use rspack_error::{Result, ToStringResultToRspackResultExt, error_bail};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JavascriptModulesRender, JsPlugin, RenderSource,
@@ -190,9 +190,9 @@ async fn js_chunk_hash(
   let Some(options) = self.get_options_for_chunk(compilation, chunk_ukey)? else {
     return Ok(());
   };
-  hasher.update(PLUGIN_NAME);
+  PLUGIN_NAME.hash(hasher);
   if let Some(name) = options.name {
-    hasher.update(&name);
+    name.hash(hasher);
   }
   Ok(())
 }

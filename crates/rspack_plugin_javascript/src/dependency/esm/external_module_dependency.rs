@@ -4,7 +4,7 @@ use rspack_core::{
   ExternalModuleInitFragment, InitFragmentExt, InitFragmentStage, RuntimeSpec, TemplateContext,
   TemplateReplaceSource,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -40,9 +40,9 @@ impl DependencyCodeGeneration for ExternalModuleDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.module);
-    hasher.update(&self.import_specifier);
-    hasher.update(&self.default_import);
+    self.module.hash(hasher);
+    self.import_specifier.hash(hasher);
+    self.default_import.hash(hasher);
   }
 }
 

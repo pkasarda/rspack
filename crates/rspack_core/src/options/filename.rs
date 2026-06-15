@@ -1,18 +1,11 @@
-use std::{
-  borrow::Cow,
-  fmt::Debug,
-  hash::{Hash, Hasher},
-  ops::Deref,
-  ptr,
-  sync::Arc,
-};
+use std::{borrow::Cow, fmt::Debug, hash::Hasher, ops::Deref, ptr, sync::Arc};
 
 use rspack_cacheable::{
   cacheable,
   with::{AsPreset, Unsupported},
 };
 use rspack_error::ToStringResultToRspackResultExt;
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::RspackHash;
 use rspack_paths::Utf8PathBuf;
 use rspack_util::{MergeFrom, atom::Atom, base64, ext::CowExt};
 
@@ -89,10 +82,10 @@ impl Filename {
   }
 }
 
-impl RspackContentHash for Filename {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl rspack_hash::RspackContentHashable for Filename {
+  fn hash(&self, state: &mut RspackHash) {
     if let FilenameKind::Template(template) = &self.0 {
-      template.rspack_content_hash(state);
+      template.hash(state);
     }
   }
 }
@@ -137,7 +130,7 @@ pub trait LocalFilenameFn {
 /// The default filename fn trait.
 pub trait FilenameFn: LocalFilenameFn + Debug + Send + Sync {}
 
-impl Hash for dyn FilenameFn + '_ {
+impl std::hash::Hash for dyn FilenameFn + '_ {
   fn hash<H: Hasher>(&self, _: &mut H) {}
 }
 impl PartialEq for dyn FilenameFn + '_ {

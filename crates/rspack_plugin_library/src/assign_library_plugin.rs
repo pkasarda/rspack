@@ -14,7 +14,7 @@ use rspack_core::{
   to_identifier,
 };
 use rspack_error::{Result, ToStringResultToRspackResultExt, error, error_bail};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JavascriptModulesEmbedInRuntimeBailout, JavascriptModulesRender,
@@ -368,16 +368,16 @@ async fn js_chunk_hash(
   let full_resolved_name = self
     .get_resolved_full_name(&options, compilation, chunk)
     .await?;
-  hasher.update(PLUGIN_NAME);
+  PLUGIN_NAME.hash(hasher);
   if self.is_copy(&options) {
-    hasher.update("copy");
+    "copy".hash(hasher);
   }
   if self.options.declare {
-    hasher.update(&self.options.declare);
+    self.options.declare.hash(hasher);
   }
-  hasher.update(&full_resolved_name.join("."));
+  full_resolved_name.join(".").hash(hasher);
   if let Some(export) = options.export {
-    hasher.update(&export);
+    export.hash(hasher);
   }
   Ok(())
 }

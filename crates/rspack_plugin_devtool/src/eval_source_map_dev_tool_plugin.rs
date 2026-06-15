@@ -9,7 +9,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, MapOptions, ObjectPool, RawStringSource, Source, SourceExt},
 };
 use rspack_error::Result;
-use rspack_hash::{RspackHash, RspackHashDigest};
+use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JavascriptModulesInlineInRuntimeBailout,
@@ -287,7 +287,7 @@ async fn js_chunk_hash(
   _chunk_ukey: &ChunkUkey,
   hasher: &mut RspackHash,
 ) -> Result<()> {
-  hasher.update(EVAL_SOURCE_MAP_DEV_TOOL_PLUGIN_NAME);
+  EVAL_SOURCE_MAP_DEV_TOOL_PLUGIN_NAME.hash(hasher);
   Ok(())
 }
 

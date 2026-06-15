@@ -7,7 +7,7 @@ use rspack_core::{
   RuntimeCondition, RuntimeSpec, SideEffectsStateArtifact, TemplateContext, TemplateReplaceSource,
   UsedByExports,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 use crate::runtime_condition_used_by_exports;
 
@@ -89,7 +89,7 @@ impl DependencyCodeGeneration for PureExpressionDependency {
     runtime: Option<&RuntimeSpec>,
   ) {
     let runtime_condition = self.get_runtime_condition(compilation, runtime);
-    hasher.update(&runtime_condition);
+    runtime_condition.hash(hasher);
   }
 }
 

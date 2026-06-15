@@ -2,7 +2,7 @@ use std::{
   borrow::Cow,
   collections::{BTreeMap, BTreeSet},
   fmt,
-  hash::{Hash, Hasher},
+  hash::Hasher,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -122,8 +122,8 @@ pub enum RspackHash {
   SHA256(Box<sha2::Sha256>),
 }
 
-pub trait RspackContentHash {
-  fn rspack_content_hash(&self, state: &mut RspackHash);
+pub trait RspackContentHashable {
+  fn hash(&self, state: &mut RspackHash);
 }
 
 #[macro_export]
@@ -136,118 +136,120 @@ macro_rules! rspack_content_hash_update {
 }
 
 #[macro_export]
-macro_rules! impl_rspack_content_hash {
+macro_rules! impl_rspack_content_hashable {
   ($ty:ty, $($field:ident),+ $(,)?) => {
-    impl $crate::RspackContentHash for $ty {
-      fn rspack_content_hash(&self, state: &mut $crate::RspackHash) {
+    impl $crate::RspackContentHashable for $ty {
+      fn hash(&self, state: &mut $crate::RspackHash) {
         $crate::rspack_content_hash_update!(state, $(self.$field),+);
       }
     }
   };
 }
 
-impl<T: RspackContentHash + ?Sized> RspackContentHash for &T {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    (*self).rspack_content_hash(state);
+impl<T: RspackContentHashable + ?Sized> RspackContentHashable for &T {
+  fn hash(&self, state: &mut RspackHash) {
+    (*self).hash(state);
   }
 }
 
-impl<T: RspackContentHash + ?Sized> RspackContentHash for Box<T> {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    (**self).rspack_content_hash(state);
+impl<T: RspackContentHashable + ?Sized> RspackContentHashable for Box<T> {
+  fn hash(&self, state: &mut RspackHash) {
+    (**self).hash(state);
   }
 }
 
-impl<T: RspackContentHash> RspackContentHash for Option<T> {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl<T: RspackContentHashable> RspackContentHashable for Option<T> {
+  fn hash(&self, state: &mut RspackHash) {
     if let Some(value) = self {
-      value.rspack_content_hash(state);
+      value.hash(state);
     }
   }
 }
 
-impl<T: RspackContentHash> RspackContentHash for [T] {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl<T: RspackContentHashable> RspackContentHashable for [T] {
+  fn hash(&self, state: &mut RspackHash) {
     for value in self {
-      value.rspack_content_hash(state);
+      value.hash(state);
     }
   }
 }
 
-impl<T: RspackContentHash> RspackContentHash for Vec<T> {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_slice().rspack_content_hash(state);
+impl<T: RspackContentHashable> RspackContentHashable for Vec<T> {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_slice().hash(state);
   }
 }
 
-impl<T: RspackContentHash + Ord> RspackContentHash for BTreeSet<T> {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl<T: RspackContentHashable + Ord> RspackContentHashable for BTreeSet<T> {
+  fn hash(&self, state: &mut RspackHash) {
     for value in self {
-      value.rspack_content_hash(state);
+      value.hash(state);
     }
   }
 }
 
-impl<K: RspackContentHash + Ord, V: RspackContentHash> RspackContentHash for BTreeMap<K, V> {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl<K: RspackContentHashable + Ord, V: RspackContentHashable> RspackContentHashable
+  for BTreeMap<K, V>
+{
+  fn hash(&self, state: &mut RspackHash) {
     for (key, value) in self {
-      key.rspack_content_hash(state);
-      value.rspack_content_hash(state);
+      key.hash(state);
+      value.hash(state);
     }
   }
 }
 
-impl<T: RspackContentHash, const N: usize> RspackContentHash for [T; N] {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_slice().rspack_content_hash(state);
+impl<T: RspackContentHashable, const N: usize> RspackContentHashable for [T; N] {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_slice().hash(state);
   }
 }
 
-impl<A: RspackContentHash, B: RspackContentHash> RspackContentHash for (A, B) {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.0.rspack_content_hash(state);
-    self.1.rspack_content_hash(state);
+impl<A: RspackContentHashable, B: RspackContentHashable> RspackContentHashable for (A, B) {
+  fn hash(&self, state: &mut RspackHash) {
+    self.0.hash(state);
+    self.1.hash(state);
   }
 }
 
-impl RspackContentHash for str {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for str {
+  fn hash(&self, state: &mut RspackHash) {
     state.write(self.as_bytes());
   }
 }
 
-impl RspackContentHash for String {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_str().rspack_content_hash(state);
+impl RspackContentHashable for String {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_str().hash(state);
   }
 }
 
-impl RspackContentHash for SmolStr {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_str().rspack_content_hash(state);
+impl RspackContentHashable for SmolStr {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_str().hash(state);
   }
 }
 
-impl RspackContentHash for Atom {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_str().rspack_content_hash(state);
+impl RspackContentHashable for Atom {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_str().hash(state);
   }
 }
 
-impl RspackContentHash for Identifier {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_str().rspack_content_hash(state);
+impl RspackContentHashable for Identifier {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_str().hash(state);
   }
 }
 
-impl RspackContentHash for Cow<'_, str> {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_ref().rspack_content_hash(state);
+impl RspackContentHashable for Cow<'_, str> {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_ref().hash(state);
   }
 }
 
-impl RspackContentHash for bool {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for bool {
+  fn hash(&self, state: &mut RspackHash) {
     state.write(if *self { b"true" } else { b"false" });
   }
 }
@@ -255,8 +257,8 @@ impl RspackContentHash for bool {
 macro_rules! impl_content_hash_for_integer {
   ($($ty:ty),+ $(,)?) => {
     $(
-      impl RspackContentHash for $ty {
-        fn rspack_content_hash(&self, state: &mut RspackHash) {
+      impl RspackContentHashable for $ty {
+        fn hash(&self, state: &mut RspackHash) {
           state.write(self.to_string().as_bytes());
         }
       }
@@ -268,44 +270,44 @@ impl_content_hash_for_integer!(
   u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
 );
 
-impl RspackContentHash for Path {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.to_string_lossy().rspack_content_hash(state);
+impl RspackContentHashable for Path {
+  fn hash(&self, state: &mut RspackHash) {
+    self.to_string_lossy().hash(state);
   }
 }
 
-impl RspackContentHash for PathBuf {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.as_path().rspack_content_hash(state);
+impl RspackContentHashable for PathBuf {
+  fn hash(&self, state: &mut RspackHash) {
+    self.as_path().hash(state);
   }
 }
 
-impl RspackContentHash for AssetCondition {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for AssetCondition {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       AssetCondition::String(value) => {
-        "string".rspack_content_hash(state);
-        value.rspack_content_hash(state);
+        "string".hash(state);
+        value.hash(state);
       }
       AssetCondition::Regexp(value) => {
-        "regexp".rspack_content_hash(state);
-        value.source.rspack_content_hash(state);
-        value.flags.rspack_content_hash(state);
+        "regexp".hash(state);
+        value.source.hash(state);
+        value.flags.hash(state);
       }
     }
   }
 }
 
-impl RspackContentHash for AssetConditions {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for AssetConditions {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       AssetConditions::Single(value) => {
-        "single".rspack_content_hash(state);
-        value.rspack_content_hash(state);
+        "single".hash(state);
+        value.hash(state);
       }
       AssetConditions::Multiple(value) => {
-        "multiple".rspack_content_hash(state);
-        value.rspack_content_hash(state);
+        "multiple".hash(state);
+        value.hash(state);
       }
     }
   }
@@ -338,8 +340,8 @@ impl RspackHash {
     this
   }
 
-  pub fn update<T: RspackContentHash + ?Sized>(&mut self, value: &T) {
-    value.rspack_content_hash(self);
+  pub fn update<T: RspackContentHashable + ?Sized>(&mut self, value: &T) {
+    value.hash(self);
   }
 
   pub fn write(&mut self, bytes: &[u8]) {
@@ -447,13 +449,13 @@ impl RspackHashDigest {
   }
 }
 
-impl Hash for RspackHashDigest {
+impl std::hash::Hash for RspackHashDigest {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    self.encoded.hash(state);
+    std::hash::Hash::hash(&self.encoded, state);
   }
 }
 
-impl_rspack_content_hash!(RspackHashDigest, encoded,);
+impl_rspack_content_hashable!(RspackHashDigest, encoded,);
 
 impl PartialEq for RspackHashDigest {
   fn eq(&self, other: &Self) -> bool {

@@ -11,7 +11,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, CachedSource, SourceExt},
 };
 use rspack_error::{Diagnostic, Result};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::plugin_hook;
 use rustc_hash::FxHashMap;
 
@@ -501,7 +501,7 @@ async fn content_hash(
     .or_insert_with(|| RspackHash::from(&compilation.options.output));
 
   if !chunk.has_runtime(&compilation.build_chunk_graph_artifact.chunk_group_by_ukey) {
-    hasher.update(&chunk.id());
+    chunk.id().hash(hasher);
   }
 
   let module_graph = compilation.get_module_graph();
@@ -524,8 +524,8 @@ async fn content_hash(
     })
     .for_each(|(current, id)| {
       if let Some(current) = current {
-        hasher.update(current);
-        hasher.update(&id);
+        current.hash(hasher);
+        id.hash(hasher);
       }
     });
 
@@ -538,7 +538,7 @@ async fn content_hash(
       .runtime_modules_hash
       .get(runtime_module_identifier)
     {
-      hasher.update(hash);
+      hash.hash(hasher);
     }
   }
 

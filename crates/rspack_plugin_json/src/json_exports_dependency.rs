@@ -5,7 +5,7 @@ use rspack_core::{
   DependencyId, ExportNameOrSpec, ExportSpec, ExportsInfoArtifact, ExportsOfExportsSpec,
   ExportsSpec, ModuleGraph, ModuleGraphCacheArtifact, RuntimeSpec,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_util::itoa;
 
 #[cacheable]
@@ -62,7 +62,7 @@ impl DependencyCodeGeneration for JsonExportsDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.data.to_string());
+    self.data.to_string().hash(hasher);
   }
 }
 

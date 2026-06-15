@@ -14,7 +14,7 @@ use rspack_cacheable::{
 use rspack_collections::{Identifiable, Identifier, IdentifierMap, IdentifierSet};
 use rspack_error::{Diagnosable, Result};
 use rspack_fs::ReadableFileSystem;
-use rspack_hash::{RspackContentHash, RspackHash, RspackHashDigest};
+use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_paths::ArcPathSet;
 use rspack_sources::BoxSource;
 use rspack_util::{
@@ -414,8 +414,8 @@ pub struct BuildMeta {
   pub side_effect_free: Option<bool>,
 }
 
-impl RspackContentHash for BuildMetaExportsType {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for BuildMetaExportsType {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       BuildMetaExportsType::Unset => "unset",
       BuildMetaExportsType::Default => "default",
@@ -423,55 +423,55 @@ impl RspackContentHash for BuildMetaExportsType {
       BuildMetaExportsType::Flagged => "flagged",
       BuildMetaExportsType::Dynamic => "dynamic",
     }
-    .rspack_content_hash(state);
+    .hash(state);
   }
 }
 
-impl RspackContentHash for ExportsType {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for ExportsType {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       ExportsType::DefaultOnly => "default-only",
       ExportsType::Namespace => "namespace",
       ExportsType::DefaultWithNamed => "default-with-named",
       ExportsType::Dynamic => "dynamic",
     }
-    .rspack_content_hash(state);
+    .hash(state);
   }
 }
 
-impl RspackContentHash for BuildMetaDefaultObject {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for BuildMetaDefaultObject {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       BuildMetaDefaultObject::False => "false",
       BuildMetaDefaultObject::Redirect => "redirect",
       BuildMetaDefaultObject::RedirectWarn => "redirect-warn",
     }
-    .rspack_content_hash(state);
+    .hash(state);
   }
 }
 
-impl RspackContentHash for ModuleArgument {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for ModuleArgument {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       ModuleArgument::Module => "module",
       ModuleArgument::RspackModule => "__webpack_module__",
     }
-    .rspack_content_hash(state);
+    .hash(state);
   }
 }
 
-impl RspackContentHash for ExportsArgument {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for ExportsArgument {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       ExportsArgument::Exports => "exports",
       ExportsArgument::RspackExports => "__webpack_exports__",
     }
-    .rspack_content_hash(state);
+    .hash(state);
   }
 }
 
-impl RspackContentHash for BuildMeta {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl RspackContentHashable for BuildMeta {
+  fn hash(&self, state: &mut RspackHash) {
     rspack_hash::rspack_content_hash_update!(
       state,
       self.strict_esm_module,
@@ -802,7 +802,9 @@ pub fn module_update_hash(
   runtime: Option<&RuntimeSpec>,
 ) {
   let chunk_graph = &compilation.build_chunk_graph_artifact.chunk_graph;
-  hasher.update(&chunk_graph.get_module_graph_hash(module, compilation, runtime));
+  chunk_graph
+    .get_module_graph_hash(module, compilation, runtime)
+    .hash(hasher);
   if let Some(deps) = module.get_presentational_dependencies() {
     for dep in deps {
       dep.update_hash(hasher, compilation, runtime);

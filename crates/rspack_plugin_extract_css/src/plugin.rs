@@ -20,7 +20,7 @@ use rspack_core::{
   },
 };
 use rspack_error::{Diagnostic, Result};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   BoxJavascriptParserPlugin, parser_and_generator::JavaScriptParserAndGenerator,
@@ -629,12 +629,12 @@ async fn content_hash(
   used_modules
     .iter()
     .map(|m| ChunkGraph::get_module_hash(compilation, m.identifier(), chunk.runtime()))
-    .for_each(|current| hasher.update(&current));
+    .for_each(|current| current.hash(hasher));
 
-  hasher.update(" ");
+  " ".hash(hasher);
   if let Some(diagnostics) = diagnostics {
     diagnostics.iter().for_each(|curr| {
-      hasher.update(curr.fallback_module.as_str());
+      curr.fallback_module.hash(hasher);
     });
   }
 

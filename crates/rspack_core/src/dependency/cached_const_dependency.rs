@@ -1,5 +1,5 @@
 use rspack_cacheable::{cacheable, cacheable_dyn};
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 use super::DependencyRange;
 use crate::{
@@ -38,9 +38,9 @@ impl DependencyCodeGeneration for CachedConstDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.identifier);
-    hasher.update(&self.range);
-    hasher.update(&self.content);
+    self.identifier.hash(hasher);
+    self.range.hash(hasher);
+    self.content.hash(hasher);
   }
 }
 

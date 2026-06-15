@@ -1,11 +1,11 @@
-use std::{borrow::Cow, hash::Hash, sync::atomic::AtomicU32};
+use std::{borrow::Cow, sync::atomic::AtomicU32};
 
 use either::Either;
 use rspack_cacheable::{
   cacheable,
   with::{AsPreset, AsVec},
 };
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::RspackHash;
 use rspack_util::{atom::Atom, json_stringify, ryu_js};
 use rustc_hash::FxHashSet as HashSet;
 
@@ -43,7 +43,7 @@ pub enum EvaluatedInlinableValue {
   String(#[cacheable(with=AsPreset)] Atom),
 }
 
-impl Hash for EvaluatedInlinableValue {
+impl std::hash::Hash for EvaluatedInlinableValue {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
     std::mem::discriminant(self).hash(state);
     match self {
@@ -61,9 +61,9 @@ impl Hash for EvaluatedInlinableValue {
   }
 }
 
-impl RspackContentHash for EvaluatedInlinableValue {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.render("").rspack_content_hash(state);
+impl rspack_hash::RspackContentHashable for EvaluatedInlinableValue {
+  fn hash(&self, state: &mut RspackHash) {
+    self.render("").hash(state);
   }
 }
 
@@ -122,11 +122,11 @@ pub enum UsedNameItem {
   Inlined(EvaluatedInlinableValue),
 }
 
-impl RspackContentHash for UsedNameItem {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl rspack_hash::RspackContentHashable for UsedNameItem {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
-      UsedNameItem::Str(value) => value.rspack_content_hash(state),
-      UsedNameItem::Inlined(value) => value.rspack_content_hash(state),
+      UsedNameItem::Str(value) => value.hash(state),
+      UsedNameItem::Inlined(value) => value.hash(state),
     }
   }
 }
@@ -137,7 +137,7 @@ pub struct InlinedUsedName {
   suffix: Vec<Atom>,
 }
 
-rspack_hash::impl_rspack_content_hash!(InlinedUsedName, value, suffix,);
+rspack_hash::impl_rspack_content_hashable!(InlinedUsedName, value, suffix,);
 
 impl InlinedUsedName {
   pub fn new(value: EvaluatedInlinableValue) -> Self {
@@ -187,14 +187,14 @@ pub enum ExportProvided {
   Unknown,
 }
 
-impl RspackContentHash for ExportProvided {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl rspack_hash::RspackContentHashable for ExportProvided {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       ExportProvided::Provided => "provided",
       ExportProvided::NotProvided => "not-provided",
       ExportProvided::Unknown => "unknown",
     }
-    .rspack_content_hash(state);
+    .hash(state);
   }
 }
 
@@ -217,8 +217,8 @@ pub enum UsageState {
   Used = 4,
 }
 
-impl RspackContentHash for UsageState {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
+impl rspack_hash::RspackContentHashable for UsageState {
+  fn hash(&self, state: &mut RspackHash) {
     match self {
       UsageState::Unused => "unused",
       UsageState::OnlyPropertiesUsed => "only-properties-used",
@@ -226,7 +226,7 @@ impl RspackContentHash for UsageState {
       UsageState::Unknown => "unknown",
       UsageState::Used => "used",
     }
-    .rspack_content_hash(state);
+    .hash(state);
   }
 }
 

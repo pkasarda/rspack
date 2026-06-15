@@ -1,11 +1,8 @@
-use std::{
-  fmt::Write as _,
-  hash::{BuildHasherDefault, Hash},
-};
+use std::{fmt::Write as _, hash::BuildHasherDefault};
 
 use rspack_cacheable::cacheable;
 use rspack_collections::{Identifier, IdentifierHasher};
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 use crate::{
   BoxDependency, Compilation, DependencyId, DependencyLocation, GroupOptions, ModuleIdentifier,
@@ -56,9 +53,9 @@ pub fn dependencies_block_update_hash(
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct AsyncDependenciesBlockIdentifier(Identifier);
 
-impl RspackContentHash for AsyncDependenciesBlockIdentifier {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.0.as_str().rspack_content_hash(state);
+impl rspack_hash::RspackContentHashable for AsyncDependenciesBlockIdentifier {
+  fn hash(&self, state: &mut RspackHash) {
+    self.0.as_str().hash(state);
   }
 }
 
@@ -194,7 +191,7 @@ impl AsyncDependenciesBlock {
     compilation: &Compilation,
     runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.group_options);
+    self.group_options.hash(hasher);
     if let Some(chunk_group) = compilation
       .build_chunk_graph_artifact
       .chunk_graph
@@ -203,7 +200,7 @@ impl AsyncDependenciesBlock {
         &compilation.build_chunk_graph_artifact.chunk_group_by_ukey,
       )
     {
-      hasher.update(&chunk_group.id(compilation));
+      chunk_group.id(compilation).hash(hasher);
     }
     dependencies_block_update_hash(
       self.get_dependencies(),

@@ -13,7 +13,7 @@ use rspack_collections::{
   Identifiable, Identifier, IdentifierIndexMap, IdentifierIndexSet, IdentifierMap, IdentifierSet,
 };
 use rspack_error::{Diagnosable, Diagnostic, Error, Result, ToStringResultToRspackResultExt};
-use rspack_hash::{HashDigest, HashFunction, RspackHash, RspackHashDigest};
+use rspack_hash::{HashDigest, HashFunction, RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_hook::define_hook;
 use rspack_sources::{
   BoxSource, CachedSource, ConcatSource, RawStringSource, ReplaceSource, Source, SourceExt,
@@ -2062,12 +2062,10 @@ impl Module for ConcatenatedModule {
     .collect::<Result<Vec<_>>>()?;
 
     for hash in hashes {
-      hasher.update(&hash?);
+      (hash?).hash(&mut hasher);
     }
 
-    {
-      module_update_hash(self, &mut hasher, compilation, generation_runtime);
-    }
+    module_update_hash(self, &mut hasher, compilation, generation_runtime);
     Ok(hasher.digest(&compilation.options.output.hash_digest))
   }
 

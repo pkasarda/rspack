@@ -6,7 +6,7 @@ use rspack_core::{
   NormalInitFragment, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
   create_exports_object_referenced, create_no_exports_referenced,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -55,8 +55,8 @@ impl DependencyCodeGeneration for ModuleDecoratorDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.decorator);
-    hasher.update(&self.allow_exports_access);
+    self.decorator.hash(hasher);
+    self.allow_exports_access.hash(hasher);
   }
 }
 

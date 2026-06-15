@@ -1,17 +1,13 @@
 //!  There are methods whose verb is `ChunkGraphChunk`
 
-use std::{
-  collections::VecDeque,
-  fmt,
-  hash::{BuildHasherDefault, Hash},
-};
+use std::{collections::VecDeque, fmt, hash::BuildHasherDefault};
 
 use hashlink::LinkedHashMap;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use rspack_cacheable::{cacheable, with::AsPreset};
 use rspack_collections::{IdentifierHasher, IdentifierLinkedMap, IdentifierMap, IdentifierSet};
-use rspack_hash::{RspackContentHash, RspackHash};
+use rspack_hash::RspackHash;
 use rspack_util::fx_hash::FxIndexSet;
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Serialize, Serializer};
@@ -82,9 +78,9 @@ impl ChunkId {
   }
 }
 
-impl RspackContentHash for ChunkId {
-  fn rspack_content_hash(&self, state: &mut RspackHash) {
-    self.0.as_str().rspack_content_hash(state);
+impl rspack_hash::RspackContentHashable for ChunkId {
+  fn hash(&self, state: &mut RspackHash) {
+    self.0.as_str().hash(state);
   }
 }
 

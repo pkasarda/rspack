@@ -9,7 +9,7 @@ use rspack_core::{
   get_js_chunk_filename_template,
 };
 use rspack_error::Result;
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JsPlugin, impl_plugin_for_js_plugin::chunk_has_js,
@@ -127,7 +127,7 @@ async fn js_chunk_hash(
     .get_chunk_runtime_modules_iterable(chunk_ukey)
   {
     if let Some(hash) = compilation.runtime_modules_hash.get(identifier) {
-      hasher.update(hash);
+      hash.hash(hasher);
     }
   }
   Ok(())

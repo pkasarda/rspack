@@ -5,7 +5,7 @@ use rspack_core::{
   rspack_sources::{ConcatSource, RawStringSource, SourceExt},
 };
 use rspack_error::Result;
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_plugin_javascript::{
   JavascriptModulesChunkHash, JavascriptModulesRenderChunk, JsPlugin, RenderSource,
@@ -80,23 +80,21 @@ async fn js_chunk_hash(
     return Ok(());
   }
 
-  {
-    hasher.update(PLUGIN_NAME);
-    let output = &compilation.options.output;
-    hasher.update(&output.global_object);
-    hasher.update(&output.chunk_loading_global);
-    hasher.update(&output.hot_update_global);
+  PLUGIN_NAME.hash(hasher);
+  let output = &compilation.options.output;
+  output.global_object.hash(hasher);
+  output.chunk_loading_global.hash(hasher);
+  output.hot_update_global.hash(hasher);
 
-    update_hash_for_entry_startup(
-      hasher,
-      compilation,
-      compilation
-        .build_chunk_graph_artifact
-        .chunk_graph
-        .get_chunk_entry_modules_with_chunk_group_iterable(chunk_ukey),
-      chunk_ukey,
-    );
-  }
+  update_hash_for_entry_startup(
+    hasher,
+    compilation,
+    compilation
+      .build_chunk_graph_artifact
+      .chunk_graph
+      .get_chunk_entry_modules_with_chunk_group_iterable(chunk_ukey),
+    chunk_ukey,
+  );
 
   Ok(())
 }

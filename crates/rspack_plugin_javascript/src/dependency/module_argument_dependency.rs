@@ -3,7 +3,7 @@ use rspack_core::{
   Compilation, DependencyCodeGeneration, DependencyLocation, DependencyRange, DependencyTemplate,
   DependencyTemplateType, RuntimeGlobals, RuntimeSpec, TemplateContext, TemplateReplaceSource,
 };
-use rspack_hash::RspackHash;
+use rspack_hash::{RspackContentHashable, RspackHash};
 
 #[cacheable]
 #[derive(Debug, Clone)]
@@ -35,8 +35,8 @@ impl DependencyCodeGeneration for ModuleArgumentDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    hasher.update(&self.id);
-    hasher.update(&self.range);
+    self.id.hash(hasher);
+    self.range.hash(hasher);
   }
 }
 

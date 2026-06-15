@@ -15,7 +15,7 @@ use rspack_core::{
   rspack_sources::{BoxSource, RawStringSource, SourceExt},
 };
 use rspack_error::{Diagnostic, IntoTWithDiagnosticArray, Result, error};
-use rspack_hash::{RspackHash, RspackHashDigest};
+use rspack_hash::{RspackContentHashable, RspackHash, RspackHashDigest};
 use rspack_hook::{plugin, plugin_hook};
 use rspack_util::{base64, fx_hash::FxHashSet, identifier::make_paths_relative};
 
@@ -116,9 +116,7 @@ impl AssetParserAndGenerator {
     compiler_options: &CompilerOptions,
   ) -> RspackHashDigest {
     let mut hasher = RspackHash::from(&compiler_options.output);
-    {
-      hasher.write(&source.buffer());
-    }
+    hasher.write(&source.buffer());
     hasher.digest(&compiler_options.output.hash_digest)
   }
 
@@ -774,7 +772,7 @@ impl ParserAndGenerator for AssetParserAndGenerator {
       && let Some(AssetGeneratorDataUrl::Options(data_url_options)) =
         module_generator_options.and_then(|x| x.asset_data_url())
     {
-      hasher.update(data_url_options);
+      data_url_options.hash(&mut hasher);
     } else if parsed_asset_config.is_resource() {
       let source_file_name = self.get_source_file_name(module, compilation);
       let (filename, _, _) = self
@@ -788,7 +786,7 @@ impl ParserAndGenerator for AssetParserAndGenerator {
         )
         .await?;
       {
-        hasher.update(&filename);
+        filename.hash(&mut hasher);
       }
       match module_generator_options.and_then(|x| x.asset_public_path()) {
         Some(public_path) => match public_path {
@@ -796,14 +794,14 @@ impl ParserAndGenerator for AssetParserAndGenerator {
             let (public_path, _) = self
               .get_public_path(module, compilation, None, &source_file_name, template)
               .await?;
-            hasher.update(&public_path);
+            public_path.hash(&mut hasher);
           }
           PublicPath::Auto => {
-            hasher.update("auto");
+            "auto".hash(&mut hasher);
           }
         },
         None => {
-          hasher.update("no-path");
+          "no-path".hash(&mut hasher);
         }
       };
     }
