@@ -7,10 +7,11 @@ use rspack_core::{
 use rspack_hash::{RspackHash, RspackHashable};
 
 #[cacheable]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, RspackHashable)]
 pub struct ExternalModuleDependency {
   module: String,
   import_specifier: Vec<(String, String)>,
+  #[rspack_hash(null_if_none)]
   default_import: Option<String>,
 }
 
@@ -40,9 +41,7 @@ impl DependencyCodeGeneration for ExternalModuleDependency {
     _compilation: &Compilation,
     _runtime: Option<&RuntimeSpec>,
   ) {
-    self.module.hash(hasher);
-    self.import_specifier.hash(hasher);
-    self.default_import.hash(hasher);
+    RspackHashable::hash(self, hasher);
   }
 }
 

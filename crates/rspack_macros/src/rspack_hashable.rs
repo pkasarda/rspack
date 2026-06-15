@@ -9,6 +9,7 @@ use syn::{
 struct FieldOptions {
   skip: bool,
   order: Option<usize>,
+  null_if_none: bool,
 }
 
 pub fn expand_rspack_hashable_derive(input: DeriveInput) -> Result<TokenStream> {
@@ -83,6 +84,9 @@ fn field_options(attrs: &[syn::Attribute]) -> Result<FieldOptions> {
         let order = value.parse::<syn::LitInt>()?;
         options.order = Some(order.base10_parse()?);
         Ok(())
+      } else if meta.path.is_ident("null_if_none") {
+        options.null_if_none = true;
+        Ok(())
       } else {
         Err(meta.error("unsupported rspack_hash field attribute"))
       }
@@ -107,12 +111,14 @@ fn hash_fields(hash_crate: &Path, fields: &Fields) -> Result<TokenStream> {
             return Some(Ok(None));
           }
           let ident = field.ident.as_ref()?;
-          Some(Ok(Some((
-            options.order.unwrap_or(index),
-            quote! {
-              #hash_crate::RspackHashable::hash(&self.#ident, state);
+          let hash = hash_field(
+            &hash_crate,
+            &quote! {
+              &self.#ident
             },
-          ))))
+            &options,
+          );
+          Some(Ok(Some((options.order.unwrap_or(index), hash))))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut fields = fields.into_iter().flatten().collect::<Vec<_>>();
@@ -136,12 +142,14 @@ fn hash_fields(hash_crate: &Path, fields: &Fields) -> Result<TokenStream> {
             return Some(Ok(None));
           }
           let field_index = Index::from(index);
-          Some(Ok(Some((
-            options.order.unwrap_or(index),
-            quote! {
-              #hash_crate::RspackHashable::hash(&self.#field_index, state);
+          let hash = hash_field(
+            &hash_crate,
+            &quote! {
+              &self.#field_index
             },
-          ))))
+            &options,
+          );
+          Some(Ok(Some((options.order.unwrap_or(index), hash))))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut fields = fields.into_iter().flatten().collect::<Vec<_>>();
@@ -187,12 +195,8 @@ fn hash_variant(
           if options.skip {
             return Some(Ok(None));
           }
-          Some(Ok(Some((
-            options.order.unwrap_or(index),
-            quote! {
-              #hash_crate::RspackHashable::hash(#ident, state);
-            },
-          ))))
+          let hash = hash_field(&hash_crate, &quote! { #ident }, &options);
+          Some(Ok(Some((options.order.unwrap_or(index), hash))))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut hashes = hashes.into_iter().flatten().collect::<Vec<_>>();
@@ -222,12 +226,8 @@ fn hash_variant(
           if options.skip {
             return Some(Ok(None));
           }
-          Some(Ok(Some((
-            options.order.unwrap_or(index),
-            quote! {
-              #hash_crate::RspackHashable::hash(#ident, state);
-            },
-          ))))
+          let hash = hash_field(&hash_crate, &quote! { #ident }, &options);
+          Some(Ok(Some((options.order.unwrap_or(index), hash))))
         })
         .collect::<Result<Vec<_>>>()?;
       let mut hashes = hashes.into_iter().flatten().collect::<Vec<_>>();
@@ -245,6 +245,21 @@ fn hash_variant(
         #hash_crate::RspackHashable::hash(#variant_name, state);
       }
     }),
+  }
+}
+
+fn hash_field(hash_crate: &Path, target: &TokenStream, options: &FieldOptions) -> TokenStream {
+  if options.null_if_none {
+    quote! {
+      match #target {
+        Some(value) => #hash_crate::RspackHashable::hash(value, state),
+        None => #hash_crate::RspackHashable::hash("null", state),
+      }
+    }
+  } else {
+    quote! {
+      #hash_crate::RspackHashable::hash(#target, state);
+    }
   }
 }
 

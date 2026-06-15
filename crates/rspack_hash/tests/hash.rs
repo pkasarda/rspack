@@ -110,3 +110,34 @@ fn option_rspack_hashable_skips_none() {
 
   assert_eq!(some, expected);
 }
+
+#[test]
+fn derive_rspack_hashable_can_hash_none_as_null() {
+  #[derive(RspackHashable)]
+  struct Value {
+    #[rspack_hash(null_if_none)]
+    value: Option<&'static str>,
+  }
+
+  let mut none = RspackHash::new(&HashFunction::Xxhash64);
+  none.update(&Value { value: None });
+  let none = none.digest(&HashDigest::Hex).encoded().to_string();
+
+  let mut expected_none = RspackHash::new(&HashFunction::Xxhash64);
+  expected_none.write(b"null");
+  let expected_none = expected_none.digest(&HashDigest::Hex).encoded().to_string();
+
+  assert_eq!(none, expected_none);
+
+  let mut some = RspackHash::new(&HashFunction::Xxhash64);
+  some.update(&Value {
+    value: Some("value"),
+  });
+  let some = some.digest(&HashDigest::Hex).encoded().to_string();
+
+  let mut expected_some = RspackHash::new(&HashFunction::Xxhash64);
+  expected_some.write(b"value");
+  let expected_some = expected_some.digest(&HashDigest::Hex).encoded().to_string();
+
+  assert_eq!(some, expected_some);
+}
