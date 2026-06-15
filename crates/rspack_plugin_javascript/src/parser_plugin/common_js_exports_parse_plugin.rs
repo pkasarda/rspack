@@ -220,7 +220,6 @@ fn handle_assign_export(
     None,
     base,
     remaining.to_owned(),
-    base.is_module_exports() && parser.module_exports_reassigned,
   )));
   parser.walk_expression(&assign_expr.right);
   Some(true)
@@ -368,7 +367,6 @@ impl<'p, 'a> JavascriptParserPlugin<'p, 'a> for CommonJsExportsParserPlugin {
         Some(arg2.span().into()),
         base,
         vec![property.into()],
-        false,
       )));
 
       parser.walk_expression(arg2);
